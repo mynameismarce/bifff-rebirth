@@ -2,358 +2,342 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIF-OS // MEMORY_HARVEST_v2</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>BIFFF // THE_REBIRTH_v5.1</title>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
+        :root {
+            --bifff-red: #7a0000;
+            --bright-red: #ff0000;
+        }
+
         body, html {
             margin: 0; padding: 0;
             background: #000;
-            color: #ff0000;
+            color: #fff;
             font-family: 'Space Mono', monospace;
             overflow: hidden;
             touch-action: none;
-            cursor: none; /* We will use a custom probe cursor */
+            -webkit-user-select: none;
+            user-select: none;
         }
 
-        /* --- THE LENS & DIRT --- */
-        #viewport {
+        #stage {
             position: relative;
             width: 100vw;
             height: 100vh;
-            background: #050505;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+            background: #020000;
             overflow: hidden;
         }
 
-        /* The physical smudge/dirt layer */
-        #glass-grime {
+        /* --- THE GOOEY FLUID (Metaball Effect) --- */
+        #fluid-layer {
             position: absolute;
             inset: 0;
-            background-image: url("https://www.transparenttextures.com/patterns/stardust.png");
-            opacity: 0.1;
-            pointer-events: none;
-            z-index: 100;
-            mix-blend-mode: overlay;
+            filter: blur(25px) contrast(35); /* Liquid look */
+            background: #000;
+            z-index: 10;
         }
 
-        /* --- THE NEURAL PROBE (Flashlight) --- */
-        #probe {
+        .blob {
             position: absolute;
-            width: 400px;
-            height: 400px;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.15) 0%, rgba(255,0,0,0.05) 40%, transparent 70%);
-            pointer-events: none;
-            z-index: 50;
-            transform: translate(-50%, -50%);
-        }
-
-        #probe-tip {
-            position: absolute;
-            width: 10px; height: 10px;
-            background: #fff;
+            background: #ff0000;
             border-radius: 50%;
-            box-shadow: 0 0 15px #fff;
-            left: 50%; top: 50%;
-            transform: translate(-50%, -50%);
+            width: 160px;
+            height: 160px;
+            pointer-events: none;
+            will-change: transform;
         }
 
-        /* --- ORGANIC RAVEN NODE --- */
-        .raven-node {
+        /* --- THE TRAPPED RAVEN (Struggling) --- */
+        #raven-container {
             position: absolute;
-            width: 80px;
-            height: 80px;
+            inset: 0;
             display: flex;
             align-items: center;
             justify-content: center;
-            opacity: 0; /* Hidden until probe is near */
-            transition: opacity 0.2s, transform 0.1s;
-            z-index: 40;
-        }
-
-        .raven-node svg {
-            width: 100%;
-            height: 100%;
-            filter: drop-shadow(0 0 10px #f00);
-        }
-
-        /* --- UI ELEMENTS --- */
-        .hud-top {
-            position: absolute;
-            top: 30px;
-            left: 40px;
-            right: 40px;
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            letter-spacing: 2px;
-            z-index: 200;
-            text-transform: uppercase;
-        }
-
-        .harvest-bar-container {
-            position: absolute;
-            bottom: 50px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 300px;
-            height: 4px;
-            background: rgba(255, 0, 0, 0.1);
-            border: 1px solid rgba(255, 0, 0, 0.3);
-            z-index: 200;
-        }
-
-        #harvest-fill {
-            width: 0%;
-            height: 100%;
-            background: #fff;
-            box-shadow: 0 0 15px #fff;
-            transition: width 0.1s;
-        }
-
-        .bile-stain {
-            position: absolute;
-            background: rgba(255, 0, 0, 0.2);
-            filter: blur(40px);
-            border-radius: 50%;
-            z-index: 10;
+            z-index: 5;
             pointer-events: none;
         }
 
-        /* --- MODALS --- */
+        #raven-svg {
+            width: 70vw;
+            max-width: 340px;
+            fill: #300000;
+            transition: fill 0.3s ease, transform 0.1s ease;
+            /* Struggle animation */
+            animation: struggle 0.5s infinite alternate ease-in-out;
+        }
+
+        @keyframes struggle {
+            from { transform: translate(-2px, -2px) rotate(-1deg) scale(1); }
+            to { transform: translate(2px, 2px) rotate(1deg) scale(1.05); }
+        }
+
+        /* --- INTERFACE --- */
+        #ui {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+        }
+
+        .hud-text {
+            font-size: 10px;
+            letter-spacing: 2px;
+            color: var(--bright-red);
+            text-transform: uppercase;
+        }
+
+        .info-panel {
+            background: rgba(0, 0, 0, 0.8);
+            border-left: 3px solid var(--bright-red);
+            padding: 20px;
+            max-width: 280px;
+            backdrop-filter: blur(5px);
+        }
+
+        /* --- OVERLAYS --- */
         .overlay {
             position: absolute;
             inset: 0;
             background: #000;
-            z-index: 1000;
+            z-index: 500;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            padding: 40px;
+            padding: 30px;
         }
 
-        .btn-bio {
-            border: 1px solid #ff0000;
+        .btn {
+            border: 1px solid var(--bright-red);
             padding: 15px 40px;
-            color: #ff0000;
+            color: var(--bright-red);
             background: transparent;
-            font-weight: bold;
             cursor: pointer;
             margin-top: 30px;
-            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: bold;
+            pointer-events: auto;
+            letter-spacing: 2px;
         }
 
-        .btn-bio:hover { background: #ff0000; color: #000; box-shadow: 0 0 30px #f00; }
+        .btn:hover {
+            background: var(--bright-red);
+            color: #000;
+            box-shadow: 0 0 40px rgba(255, 0, 0, 0.5);
+        }
 
-        .glitch-text { animation: glitch 0.2s infinite; }
-        @keyframes glitch {
-            0% { transform: translate(0); }
-            50% { transform: translate(-2px, 2px); }
-            100% { transform: translate(2px, -2px); }
+        .scanlines {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 150;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
 
-    <div id="viewport">
-        <div id="glass-grime"></div>
-        <div id="probe"><div id="probe-tip"></div></div>
+    <div class="scanlines"></div>
 
-        <!-- HUD -->
-        <header class="hud-top">
-            <div>OBJECTIVE: HARVEST_RAVEN_NODES</div>
-            <div id="status">SCANNING_THE_VOID...</div>
-            <div>FRAGMENTS: <span id="count">0</span> / 10</div>
-        </header>
-
-        <div class="harvest-bar-container" id="bar-ui" style="display:none">
-            <div class="text-[8px] text-center mb-2">EXTRACTING_FANTASTIC_DATA...</div>
-            <div id="harvest-fill"></div>
+    <div id="stage">
+        <!-- Beneath the liquid: The Raven -->
+        <div id="raven-container">
+            <svg id="raven-svg" viewBox="0 0 100 100">
+                <path d="M10 50 L40 42 L50 10 L60 42 L90 50 L60 58 L50 90 L40 58 Z" />
+                <!-- Glowing eye -->
+                <circle cx="50" cy="50" r="3" fill="red" id="raven-eye" />
+            </svg>
         </div>
 
-        <!-- START SCREEN -->
-        <div id="start-screen" class="overlay">
-            <div class="mb-8 opacity-50">
-                <svg width="60" height="60" viewBox="0 0 100 100">
-                    <path d="M10 50 L40 40 L50 10 L60 40 L90 50 L60 60 L50 90 L40 60 Z" fill="red" />
-                </svg>
+        <!-- The Sentient Bio-Fluid -->
+        <div id="fluid-layer"></div>
+
+        <!-- UI HUD -->
+        <div id="ui">
+            <div class="hud-text flex justify-between w-full">
+                <span>TERMINAL: BIF_CORE_LINK</span>
+                <span>SYNC_STABILITY: <span id="sync-val">0</span>%</span>
             </div>
-            <h1 class="text-4xl font-bold tracking-tighter mb-4">NEURAL HARVESTER v2.0</h1>
-            <p class="max-w-md text-xs leading-loose opacity-60">
-                The BIF Market archives are submerged in dark biological matter. <br>
-                1. Use your probe to <span class="text-white">SCAN</span> the darkness. <br>
-                2. Find the Raven Nodes. <br>
-                3. <span class="text-white">HOLD CLICK</span> to harvest memory fragments. <br>
-                Do not let them burst.
-            </p>
-            <button class="btn-bio" onclick="start()">INITIATE LINK</button>
+
+            <div id="status-panel" class="info-panel">
+                <div class="hud-text font-bold mb-2">[RESCUE_PROTOCOL]</div>
+                <p class="text-[9px] opacity-70 leading-relaxed uppercase">
+                    Mascot is drowning in bio-waste. <br>
+                    Use your touch to push the matter away from the center. <br>
+                    Clear a path to the borders for escape.
+                </p>
+                <div class="w-full h-[2px] bg-red-950 mt-4 overflow-hidden">
+                    <div id="progress-bar" class="h-full bg-red-500 w-0 transition-all duration-200"></div>
+                </div>
+            </div>
         </div>
 
-        <!-- SUCCESS SCREEN -->
-        <div id="win-screen" class="overlay" style="display:none">
-            <h1 class="text-6xl font-bold text-white mb-4">HARVEST COMPLETE</h1>
-            <p class="text-xl mb-8">THE 2026 SELECTION HAS BEEN RECONSTRUCTED.</p>
-            <button class="btn-bio" onclick="location.reload()">RE-LINK</button>
+        <!-- Start Screen -->
+        <div id="boot-screen" class="overlay">
+            <svg width="80" height="80" viewBox="0 0 100 100" class="mb-8 opacity-90 animate-pulse">
+                <path d="M10 50 L40 42 L50 10 L60 42 L90 50 L60 58 L50 90 L40 58 Z" fill="red" />
+            </svg>
+            <h1 class="text-4xl font-bold mb-4 tracking-tighter">HEMATIC REBIRTH</h1>
+            <p class="max-w-xs text-[10px] opacity-50 leading-loose uppercase">
+                The Raven signal is being absorbed. <br>
+                Push the sentient matter toward the screen edges. <br>
+                Free the festival icon.
+            </p>
+            <button class="btn" onclick="init()">[ EXORCISE SIGNAL ]</button>
+        </div>
+
+        <!-- Freedom Screen -->
+        <div id="freedom-screen" class="overlay" style="display:none">
+            <h1 class="text-6xl font-bold mb-4 text-white tracking-tighter">SIGNAL_FREE</h1>
+            <p class="text-[10px] opacity-50 uppercase tracking-widest">The BIF Market archives are stabilized.</p>
+            <button class="btn" onclick="location.reload()">[ RE-ENGAGE ]</button>
         </div>
     </div>
 
     <script>
-        const viewport = document.getElementById('viewport');
-        const probe = document.getElementById('probe');
-        const barUI = document.getElementById('bar-ui');
-        const harvestFill = document.getElementById('harvest-fill');
-        const countDisplay = document.getElementById('count');
-        const statusDisplay = document.getElementById('status');
+        const fluidLayer = document.getElementById('fluid-layer');
+        const raven = document.getElementById('raven-svg');
+        const syncText = document.getElementById('sync-val');
+        const progressBar = document.getElementById('progress-bar');
+        
+        let isLive = false;
+        let progress = 0;
+        let blobs = [];
+        let pointer = { x: -1000, y: -1000, active: false };
 
-        let fragments = 0;
-        let activeNode = null;
-        let isHarvesting = false;
-        let harvestProgress = 0;
-        let gameActive = false;
+        const BLOB_COUNT = 22; // Slightly more for better coverage
 
-        // Follow Mouse
-        window.addEventListener('mousemove', (e) => {
-            probe.style.left = e.clientX + 'px';
-            probe.style.top = e.clientY + 'px';
-            checkDetection(e.clientX, e.clientY);
-        });
+        function init() {
+            document.getElementById('boot-screen').style.display = 'none';
+            isLive = true;
 
-        function start() {
-            document.getElementById('start-screen').style.display = 'none';
-            gameActive = true;
-            spawnNode();
+            // Create biological blobs
+            for (let i = 0; i < BLOB_COUNT; i++) {
+                const el = document.createElement('div');
+                el.className = 'blob';
+                fluidLayer.appendChild(el);
+                
+                // Clusters blobs in the middle initially to trap the raven
+                blobs.push({
+                    el: el,
+                    x: window.innerWidth / 2 + (Math.random() - 0.5) * 150,
+                    y: window.innerHeight / 2 + (Math.random() - 0.5) * 150,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: (Math.random() - 0.5) * 2,
+                    size: 120 + Math.random() * 80
+                });
+            }
+
+            // Universal pointer handling for both mouse and touch
+            window.addEventListener('pointerdown', (e) => { pointer.active = true; updatePointer(e); });
+            window.addEventListener('pointermove', updatePointer);
+            window.addEventListener('pointerup', () => { pointer.active = false; });
+            window.addEventListener('pointercancel', () => { pointer.active = false; });
+            
+            // Force block mobile scrolling
+            document.body.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
+            document.body.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+            requestAnimationFrame(update);
         }
 
-        function spawnNode() {
-            if(!gameActive) return;
-            
-            const node = document.createElement('div');
-            node.className = 'raven-node';
-            node.innerHTML = `
-                <svg viewBox="0 0 100 100">
-                    <path d="M10 50 L40 40 L50 10 L60 40 L90 50 L60 60 L50 90 L40 60 Z" fill="red" />
-                </svg>
-            `;
-            
-            const x = Math.random() * (window.innerWidth - 200) + 100;
-            const y = Math.random() * (window.innerHeight - 200) + 100;
-            node.style.left = x + 'px';
-            node.style.top = y + 'px';
-            
-            viewport.appendChild(node);
-            activeNode = { el: node, x, y, time: Date.now() };
+        function updatePointer(e) {
+            pointer.x = e.clientX;
+            pointer.y = e.clientY;
+        }
 
-            // Node will burst after 6 seconds if not harvested
-            activeNode.timeout = setTimeout(() => {
-                if(activeNode && activeNode.el === node) {
-                    burstNode(x, y);
+        function update() {
+            if (!isLive) return;
+
+            const centerX = window.innerWidth / 2;
+            const centerY = window.innerHeight / 2;
+            let centerClearance = 0;
+
+            blobs.forEach(b => {
+                // 1. Gravity: Blobs are attracted to the Raven (the center)
+                const dxCenter = centerX - b.x;
+                const dyCenter = centerY - b.y;
+                b.vx += dxCenter * 0.0006;
+                b.vy += dyCenter * 0.0006;
+
+                // 2. Repulsion: PUSH blobs away from finger/mouse
+                if (pointer.active) {
+                    const dxPointer = b.x - pointer.x;
+                    const dyPointer = b.y - pointer.y;
+                    const distPointer = Math.hypot(dxPointer, dyPointer);
+                    if (distPointer < 260) {
+                        const force = (260 - distPointer) * 0.012; // Stronger push
+                        b.vx += (dxPointer / distPointer) * force;
+                        b.vy += (dyPointer / distPointer) * force;
+                    }
                 }
-            }, 6000);
-        }
 
-        function checkDetection(mx, my) {
-            if(!activeNode) return;
-            const dist = Math.hypot(mx - activeNode.x, my - activeNode.y);
-            
-            if(dist < 150) {
-                activeNode.el.style.opacity = (150 - dist) / 100;
-                statusDisplay.innerText = "SIGNAL_DETECTED: STABILIZE_TO_HARVEST";
-                statusDisplay.classList.add('glitch-text');
+                // 3. Physics & Friction
+                b.vx *= 0.94;
+                b.vy *= 0.94;
+                b.x += b.vx;
+                b.y += b.vy;
+
+                // Screen boundaries
+                if (b.x < -b.size) b.x = -b.size;
+                if (b.x > window.innerWidth + b.size) b.x = window.innerWidth + b.size;
+                if (b.y < -b.size) b.y = -b.size;
+                if (b.y > window.innerHeight + b.size) b.y = window.innerHeight + b.size;
+
+                b.el.style.transform = `translate(${b.x - b.size/2}px, ${b.y - b.size/2}px)`;
+
+                // 4. Calculate freedom: Distance from center
+                const distFromCenter = Math.hypot(b.x - centerX, b.y - centerY);
+                if (distFromCenter > 200) centerClearance++;
+            });
+
+            // Winning condition: Clear the center space
+            const ratio = centerClearance / BLOB_COUNT;
+            if (ratio > 0.65) {
+                progress = Math.min(100, progress + 0.6);
+                // Visual feedback of the Raven getting stronger
+                raven.style.fill = `rgba(255, 0, 0, ${0.4 + (progress/100)})`;
+                raven.style.transform = `scale(${1 + (progress/300)}) rotate(${progress * 0.5}deg)`;
+                raven.style.filter = `drop-shadow(0 0 ${progress/4}px var(--bright-red))`;
+                document.getElementById('status-panel').style.borderColor = "white";
             } else {
-                activeNode.el.style.opacity = 0;
-                statusDisplay.innerText = "SCANNING_THE_VOID...";
-                statusDisplay.classList.remove('glitch-text');
+                progress = Math.max(0, progress - 0.25);
+                raven.style.fill = '#200000';
+                raven.style.filter = 'none';
+                document.getElementById('status-panel').style.borderColor = "var(--bright-red)";
+            }
+
+            syncText.innerText = Math.floor(progress);
+            progressBar.style.width = progress + '%';
+
+            if (progress >= 100) {
+                triggerFreedom();
+            } else {
+                requestAnimationFrame(update);
             }
         }
 
-        // Harvesting Mechanic
-        window.addEventListener('mousedown', () => {
-            if(!activeNode || activeNode.el.style.opacity < 0.5) return;
-            isHarvesting = true;
-            barUI.style.display = 'block';
-            harvestLoop();
-        });
-
-        window.addEventListener('mouseup', () => {
-            isHarvesting = false;
-            barUI.style.display = 'none';
-            harvestProgress = 0;
-            harvestFill.style.width = '0%';
-        });
-
-        function harvestLoop() {
-            if(!isHarvesting) return;
-
-            harvestProgress += 1.5;
-            harvestFill.style.width = harvestProgress + '%';
+        function triggerFreedom() {
+            isLive = false;
+            // Cinematic escape
+            raven.style.transition = 'all 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045)';
+            raven.style.transform = 'scale(40) rotate(720deg) translateY(-100px)';
+            raven.style.opacity = '0';
             
-            // Screen Shake Effect
-            viewport.style.transform = `translate(${Math.random()*4-2}px, ${Math.random()*4-2}px)`;
-
-            if(harvestProgress >= 100) {
-                completeHarvest();
-            } else {
-                requestAnimationFrame(harvestLoop);
-            }
-        }
-
-        function completeHarvest() {
-            isHarvesting = false;
-            harvestProgress = 0;
-            barUI.style.display = 'none';
-            viewport.style.transform = 'none';
-
-            clearTimeout(activeNode.timeout);
-            activeNode.el.remove();
-            activeNode = null;
-            
-            fragments++;
-            countDisplay.innerText = fragments;
-            
-            if(fragments >= 10) {
-                gameActive = false;
-                document.getElementById('win-screen').style.display = 'flex';
-            } else {
-                setTimeout(spawnNode, 1000);
-            }
-        }
-
-        function burstNode(x, y) {
-            const stain = document.createElement('div');
-            stain.className = 'bile-stain';
-            const size = 200 + Math.random() * 300;
-            stain.style.width = size + 'px';
-            stain.style.height = size + 'px';
-            stain.style.left = (x - size/2) + 'px';
-            stain.style.top = (y - size/2) + 'px';
-            viewport.appendChild(stain);
-
-            activeNode.el.remove();
-            activeNode = null;
-            
-            // Shake screen violently
-            viewport.style.animation = 'shake 0.5s linear';
             setTimeout(() => {
-                viewport.style.animation = '';
-                spawnNode();
-            }, 500);
+                document.getElementById('freedom-screen').style.display = 'flex';
+            }, 1000);
         }
     </script>
-
-    <style>
-        @keyframes shake {
-            0% { transform: translate(5px, 5px); }
-            20% { transform: translate(-5px, -10px); }
-            40% { transform: translate(10px, 5px); }
-            60% { transform: translate(-10px, 0px); }
-            80% { transform: translate(5px, 10px); }
-            100% { transform: translate(0, 0); }
-        }
-    </style>
 </body>
 </html>
