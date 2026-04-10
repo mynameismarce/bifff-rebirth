@@ -179,6 +179,7 @@
 </head>
 <body>
 
+    <!-- Filter used to create smooth, liquid metaballs -->
     <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
         <defs>
             <filter id="gooey">
@@ -193,20 +194,20 @@
     <div class="scanlines"></div>
 
     <div id="stage">
-        <!-- THE RAVEN CORE (Updated to Logo 1.png style) -->
+        <!-- THE RAVEN CORE (Mascot with Top Hat) -->
         <div id="raven-core">
             <svg id="raven-svg" class="heartbeat" viewBox="0 0 500 500">
-                <!-- Simplified SVG Path of the Mascot -->
-                <g transform="translate(50,50)">
+                <g transform="translate(50,30)">
                    <!-- Top Hat -->
-                   <path d="M150 150 L350 150 L340 50 C340 20, 160 20, 160 50 Z" />
-                   <path d="M120 150 L380 150 L380 170 L120 170 Z" />
-                   <!-- Raven Head & Beak -->
-                   <path d="M160 170 Q160 300 250 450 L300 350 Q350 300 380 200 Z" />
-                   <path d="M250 450 L200 350 L280 380 Z" />
-                   <path d="M250 450 L320 340 L380 300 Z" />
-                   <!-- Red Eye Spot -->
-                   <circle cx="280" cy="220" r="12" fill="#ff0000" id="mascot-eye" />
+                   <path d="M160 150 L340 150 L330 60 C330 30, 170 30, 170 60 Z" fill="currentColor"/>
+                   <path d="M130 150 L370 150 L370 165 L130 165 Z" fill="currentColor"/>
+                   <!-- Raven Silhouette -->
+                   <path d="M165 165 Q160 280 250 440 L290 340 Q330 280 370 180 Q300 200 165 165 Z" fill="currentColor"/>
+                   <!-- Beak Area -->
+                   <path d="M250 440 L210 340 L280 360 Z" fill="currentColor"/>
+                   <path d="M250 440 L310 330 L360 280 Z" fill="currentColor"/>
+                   <!-- Glowing Eye -->
+                   <circle cx="285" cy="210" r="14" fill="#ff0000" id="mascot-eye" />
                 </g>
             </svg>
         </div>
@@ -215,7 +216,7 @@
 
         <div id="ui-layer">
             <header class="hud-header">
-                <div>NODE: BIF_MARKET_X_ANNIV</div>
+                <div>NODE: BIF_MARKET_ANNIV_X</div>
                 <div class="text-white">YEARS_RECOVERED: <span id="years-val" class="text-red-600">0</span> / 10</div>
                 <div>INTEGRITY: <span id="sync-val">0</span>%</div>
             </header>
@@ -223,9 +224,9 @@
             <div class="terminal-log">
                 <div class="text-red-600 font-bold mb-1">[NEURAL_HARVEST]</div>
                 <p id="instruction-text" class="text-[9px] opacity-60 leading-relaxed uppercase">
-                    The Mascot is suffocating in bio-matter. <br>
-                    Push the non-newtonian fluid to the edges. <br>
-                    Restore 10 years of festival frequency.
+                    10 years of archives are drowning in biological data. <br>
+                    Push the non-newtonian fluid to the borders. <br>
+                    stabilize each year to complete the selection.
                 </p>
                 <div class="progress-bar">
                     <div id="progress-fill"></div>
@@ -235,24 +236,25 @@
 
         <!-- START SCREEN -->
         <div id="boot-screen" class="overlay">
-            <div class="mb-8 opacity-70">
-                <svg width="80" height="80" viewBox="0 0 100 100">
-                    <path d="M10 50 L40 42 L50 10 L60 42 L90 50 L60 58 L50 90 L40 58 Z" fill="red" />
+            <div class="mb-8 opacity-80">
+                <!-- Mini Logo -->
+                <svg width="80" height="80" viewBox="0 0 500 500">
+                    <path d="M160 150 L340 150 L330 60 C330 30, 170 30, 170 60 Z M130 150 L370 150 L370 165 L130 165 Z M165 165 Q160 280 250 440 L290 340 Q330 280 370 180 Q300 200 165 165 Z" fill="red" />
                 </svg>
             </div>
             <h1 class="text-3xl font-bold tracking-tighter mb-4 uppercase">Archive Exorcism</h1>
             <p class="max-w-xs text-[10px] opacity-40 leading-loose uppercase mb-10">
-                Data layers have congealed. <br>
-                Extract 10 ravens to synchronize the market archives. <br>
-                Fluid viscosity increases per success.
+                The BIF Market archives have congealed. <br>
+                Purge 10 layers of organic interference to unlock the selection. <br>
+                resistance scales per fragment recovered.
             </p>
-            <button class="btn-molino" onclick="init()">[ Start Neural Link ]</button>
+            <button class="btn-molino" onclick="init()">[ Initialize Neural Link ]</button>
         </div>
 
         <!-- FINAL SUCCESS -->
         <div id="freedom-screen" class="overlay" style="display:none">
             <h1 class="text-6xl font-bold mb-4 tracking-tighter">ARCHIVE_SECURED</h1>
-            <p class="text-[10px] opacity-50 uppercase tracking-widest mb-10">All 10 years of the BIF Market have been stabilized.</p>
+            <p class="text-[10px] opacity-50 uppercase tracking-widest mb-10">10 Years of BIF Market history restored.</p>
             <button class="btn-molino" onclick="location.reload()">[ Re-Initialize ]</button>
         </div>
     </div>
@@ -273,7 +275,7 @@
         let pointer = { x: -1000, y: -1000, active: false };
         let ravenPos = { x: 0, y: 0 };
 
-        const BLOB_COUNT = 20;
+        const BLOB_COUNT = 22; // Increased for more density
 
         function init() {
             document.getElementById('boot-screen').style.display = 'none';
@@ -298,12 +300,13 @@
                 el.className = 'blob';
                 fluidContainer.appendChild(el);
                 
+                // Spawn blobs clustered around current center
                 blobs.push({
                     el: el,
-                    x: window.innerWidth / 2 + (Math.random() - 0.5) * 200,
-                    y: window.innerHeight / 2 + (Math.random() - 0.5) * 200,
+                    x: window.innerWidth / 2 + ravenPos.x + (Math.random() - 0.5) * 150,
+                    y: window.innerHeight / 2 + ravenPos.y + (Math.random() - 0.5) * 150,
                     vx: 0, vy: 0,
-                    size: 160 + Math.random() * 100
+                    size: 160 + Math.random() * 80
                 });
             }
         }
@@ -320,49 +323,63 @@
             const centerY = window.innerHeight / 2 + ravenPos.y;
             let centerClearance = 0;
 
-            const gravityForce = 0.0008 + (yearsRecovered * 0.0002);
+            // DIFFICULTY SCALING: Physics get harder each level
+            const gravityForce = 0.0009 + (yearsRecovered * 0.0003);
             const friction = 0.92 - (yearsRecovered * 0.01);
-            const pushRange = 260 - (yearsRecovered * 6);
+            const pushRange = 270 - (yearsRecovered * 6);
 
             blobs.forEach(b => {
+                // 1. Gravity toward the Raven (the Trap)
                 const dxCenter = centerX - b.x;
                 const dyCenter = centerY - b.y;
                 b.vx += dxCenter * gravityForce;
                 b.vy += dyCenter * gravityForce;
 
+                // 2. Repulsion from User
                 if (pointer.active) {
                     const dxPointer = b.x - pointer.x;
                     const dyPointer = b.y - pointer.y;
                     const distPointer = Math.hypot(dxPointer, dyPointer);
                     if (distPointer < pushRange) {
-                        const force = (pushRange - distPointer) * 0.025;
+                        const force = (pushRange - distPointer) * 0.03;
                         b.vx += (dxPointer / distPointer) * force;
                         b.vy += (dyPointer / distPointer) * force;
                     }
                 }
 
+                // 3. Update physics
                 b.vx *= friction;
                 b.vy *= friction;
                 b.x += b.vx;
                 b.y += b.vy;
 
-                const s = b.size + (yearsRecovered * 8);
-                b.el.style.width = s + 'px';
-                b.el.style.height = s + 'px';
-                b.el.style.transform = `translate(${b.x - s/2}px, ${b.y - s/2}px)`;
+                // Clamping to screen
+                const margin = b.size;
+                if(b.x < -margin) b.x = -margin;
+                if(b.x > window.innerWidth + margin) b.x = window.innerWidth + margin;
+                if(b.y < -margin) b.y = -margin;
+                if(b.y > window.innerHeight + margin) b.y = window.innerHeight + margin;
+
+                const currentSize = b.size + (yearsRecovered * 6);
+                b.el.style.width = currentSize + 'px';
+                b.el.style.height = currentSize + 'px';
+                b.el.style.transform = `translate(${b.x - currentSize/2}px, ${b.y - currentSize/2}px)`;
 
                 const distFromRaven = Math.hypot(b.x - centerX, b.y - centerY);
-                if (distFromRaven > 230) centerClearance++;
+                if (distFromRaven > 220) centerClearance++;
             });
 
+            // Winning condition logic
             const ratio = centerClearance / BLOB_COUNT;
             if (ratio > 0.6) {
-                progress = Math.min(100, progress + (0.7 - (yearsRecovered * 0.04)));
+                // User is clearing the space!
+                progress = Math.min(100, progress + (0.8 - (yearsRecovered * 0.04)));
                 ravenSvg.style.fill = `rgba(255, 0, 0, ${0.4 + (progress/100)})`;
-                ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(${1 + (progress/250)}) rotate(${progress * 0.3}deg)`;
+                ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(${1 + (progress/250)}) rotate(${progress * 0.2}deg)`;
                 ravenSvg.classList.remove('heartbeat');
             } else {
-                progress = Math.max(0, progress - (0.2 + (yearsRecovered * 0.05)));
+                // Fluid is taking over
+                progress = Math.max(0, progress - (0.2 + (yearsRecovered * 0.06)));
                 ravenSvg.style.fill = '#1a0000';
                 ravenSvg.classList.add('heartbeat');
             }
@@ -382,28 +399,38 @@
             yearsText.innerText = yearsRecovered;
             progress = 0;
             
+            // Success Flash
             flash.style.opacity = '1';
-            setTimeout(() => flash.style.opacity = '0', 250);
+            setTimeout(() => {
+                flash.style.opacity = '0';
+            }, 200);
 
             if (yearsRecovered >= 10) {
                 finalize();
             } else {
-                // Relocate to a new random sector
-                const margin = 0.2;
-                ravenPos.x = (Math.random() - 0.5) * (window.innerWidth * 0.5);
-                ravenPos.y = (Math.random() - 0.5) * (window.innerHeight * 0.5);
+                // REPOSITION RAVEN: Move to a new random location on screen
+                const safeZone = 0.5; // Stay within 50% of center area for visibility
+                ravenPos.x = (Math.random() - 0.5) * (window.innerWidth * safeZone);
+                ravenPos.y = (Math.random() - 0.5) * (window.innerHeight * safeZone);
                 
-                // Repel blobs slightly from new center to give user a head start
+                // Immediately apply position so game loop picks it up
+                ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(1)`;
+                
+                // Small nudge to blobs to prevent immediate suffocation
                 blobs.forEach(b => {
-                    b.x += (Math.random() - 0.5) * 100;
-                    b.y += (Math.random() - 0.5) * 100;
+                    b.x += (Math.random() - 0.5) * 200;
+                    b.y += (Math.random() - 0.5) * 200;
                 });
+
+                // Continue game loop
+                requestAnimationFrame(update);
             }
         }
 
         function finalize() {
             isRunning = false;
-            ravenCore.style.transition = 'all 1.2s cubic-bezier(0.6, -0.28, 0.735, 0.045)';
+            // Cinematic flight out of screen
+            ravenCore.style.transition = 'all 1.3s cubic-bezier(0.6, -0.28, 0.735, 0.045)';
             ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(60) rotate(1440deg)`;
             ravenCore.style.opacity = '0';
             
