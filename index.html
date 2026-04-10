@@ -1,447 +1,369 @@
+```html
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIF-OS // NEURAL_BREACH_v10</title>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <title>BIFFF // THE RAVEN VOID: PAZUZU BREACH</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {
-            --bifff-red: #7a0000;
-            --bright-red: #ff0000;
-            --ui-zinc: #52525b;
+            --bifff-red: #ff0000;
+            --deep-black: #050000;
         }
 
         body, html {
             margin: 0; padding: 0;
-            background: #000;
-            color: #fff;
-            font-family: 'Space Mono', monospace;
+            background: var(--deep-black);
+            color: var(--bifff-red);
+            font-family: 'VT323', monospace;
             overflow: hidden;
             touch-action: none;
-            user-select: none;
         }
 
-        #stage {
+        /* --- CINEMATIC CRT EFFECTS --- */
+        #monitor {
             position: relative;
             width: 100vw;
             height: 100vh;
-            background: radial-gradient(circle at center, #0a0000 0%, #000 100%);
             display: flex;
-            align-items: center;
-            justify-content: center;
+            flex-direction: column;
+            box-sizing: border-box;
+            background: radial-gradient(circle, #1a0000 0%, #050000 100%);
         }
 
-        /* High-Quality Fluid Filter */
-        #fluid-container {
+        .crt-grain {
             position: absolute;
             inset: 0;
-            filter: url('#gooey');
-            z-index: 20;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+            opacity: 0.1;
             pointer-events: none;
-        }
-
-        .blob {
-            position: absolute;
-            background: var(--bright-red);
-            border-radius: 50%;
-            will-change: transform;
-            opacity: 0.8;
-        }
-
-        /* --- THE STRUGGLING RAVEN --- */
-        #raven-core {
-            position: absolute;
-            z-index: 5;
-            width: 320px;
-            height: 320px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: transform 0.8s cubic-bezier(0.19, 1, 0.22, 1);
-        }
-
-        #raven-svg {
-            width: 100%;
-            height: 100%;
-            fill: #1a0000;
-            transition: all 0.2s ease;
-        }
-
-        .heartbeat {
-            animation: pulse 1.5s infinite ease-in-out;
-        }
-
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.4; fill: #1a0000; }
-            50% { transform: scale(1.05); opacity: 0.7; fill: #3a0000; }
-            100% { transform: scale(1); opacity: 0.4; fill: #1a0000; }
-        }
-
-        /* --- UI HUD --- */
-        #ui-layer {
-            position: absolute;
-            inset: 0;
             z-index: 200;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 30px;
-        }
-
-        .hud-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            letter-spacing: 3px;
-            color: var(--bright-red);
-            border-bottom: 1px solid rgba(255, 0, 0, 0.1);
-            padding-bottom: 10px;
-        }
-
-        .terminal-log {
-            background: rgba(0,0,0,0.85);
-            border: 1px solid #1a1a1a;
-            padding: 15px;
-            max-width: 280px;
-            font-size: 10px;
-            pointer-events: auto;
-            backdrop-filter: blur(4px);
-        }
-
-        .progress-bar {
-            width: 100%;
-            height: 2px;
-            background: #111;
-            margin-top: 10px;
-            position: relative;
-        }
-
-        #progress-fill {
-            width: 0%;
-            height: 100%;
-            background: var(--bright-red);
-            box-shadow: 0 0 10px var(--bright-red);
-        }
-
-        /* --- MODALS --- */
-        .overlay {
-            position: absolute;
-            inset: 0;
-            background: #000;
-            z-index: 500;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .btn-molino {
-            border: 1px solid var(--bright-red);
-            padding: 15px 40px;
-            color: var(--bright-red);
-            background: transparent;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            transition: all 0.3s;
-        }
-
-        .btn-molino:hover {
-            background: var(--bright-red);
-            color: #000;
-            box-shadow: 0 0 30px var(--bright-red);
         }
 
         .scanlines {
             position: absolute;
             inset: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.2) 50%);
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.3) 50%);
             background-size: 100% 4px;
             z-index: 150;
             pointer-events: none;
         }
 
-        #flash-effect {
+        /* --- TERMINAL INTERFACE --- */
+        #header-terminal {
+            height: 65px;
+            border-bottom: 2px solid rgba(255, 0, 0, 0.2);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 25px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            background: rgba(0, 0, 0, 0.85);
+            z-index: 100;
+            backdrop-filter: blur(5px);
+        }
+
+        #game-view {
+            flex-grow: 1;
+            position: relative;
+            overflow: hidden;
+            cursor: none;
+        }
+
+        /* --- ENTITY SPRITES --- */
+        .entity {
+            position: absolute;
+            pointer-events: none;
+            will-change: transform;
+        }
+
+        #player-mascot {
+            width: 90px;
+            height: 90px;
+            z-index: 50;
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.1));
+        }
+
+        .pazuzu-enemy {
+            width: 75px;
+            height: 75px;
+            z-index: 40;
+            filter: drop-shadow(0 0 8px rgba(255, 0, 0, 0.6));
+            opacity: 0.85;
+        }
+
+        /* --- UI MODALS --- */
+        .modal {
             position: absolute;
             inset: 0;
-            background: white;
+            background: black;
             z-index: 300;
-            opacity: 0;
-            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 40px;
+            border: 2px solid var(--bifff-red);
+            box-shadow: inset 0 0 150px rgba(255, 0, 0, 0.2);
+        }
+
+        .btn-action {
+            border: 1px solid var(--bifff-red);
+            padding: 12px 50px;
+            font-size: 24px;
+            background: transparent;
+            color: var(--bifff-red);
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 40px;
+            text-transform: uppercase;
+        }
+
+        .btn-action:hover {
+            background: var(--bifff-red);
+            color: black;
+            box-shadow: 0 0 25px var(--bifff-red);
+        }
+
+        .status-tag {
+            font-size: 10px;
+            color: rgba(255, 0, 0, 0.4);
+            margin-bottom: -5px;
+        }
+
+        .instruction-footer {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            text-align: center;
+            font-size: 14px;
+            opacity: 0.3;
+            letter-spacing: 2px;
         }
     </style>
 </head>
 <body>
 
-    <!-- Filter used to create smooth, liquid metaballs -->
-    <svg xmlns="http://www.w3.org/2000/svg" style="display:none">
-        <defs>
-            <filter id="gooey">
-                <feGaussianBlur in="SourceGraphic" stdDeviation="15" result="blur" />
-                <feColorMatrix in="blur" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 35 -15" result="goo" />
-                <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-            </filter>
-        </defs>
-    </svg>
+    <div id="monitor">
+        <div class="crt-grain"></div>
+        <div class="scanlines"></div>
 
-    <div id="flash-effect"></div>
-    <div class="scanlines"></div>
+        <header id="header-terminal">
+            <div class="flex flex-col">
+                <span class="status-tag">SIGNAL_QUALITY</span>
+                <span id="score">00000</span>
+            </div>
+            <div class="text-center font-bold text-2xl tracking-widest">BIF_ARCHIVE.EXE</div>
+            <div class="flex flex-col text-right">
+                <span class="status-tag">VOID_DEPTH</span>
+                <span id="rank">INITIATE</span>
+            </div>
+        </header>
 
-    <div id="stage">
-        <!-- THE RAVEN CORE (Mascot with Top Hat) -->
-        <div id="raven-core">
-            <svg id="raven-svg" class="heartbeat" viewBox="0 0 500 500">
-                <g transform="translate(50,30)">
-                   <!-- Top Hat -->
-                   <path d="M160 150 L340 150 L330 60 C330 30, 170 30, 170 60 Z" fill="currentColor"/>
-                   <path d="M130 150 L370 150 L370 165 L130 165 Z" fill="currentColor"/>
-                   <!-- Raven Silhouette -->
-                   <path d="M165 165 Q160 280 250 440 L290 340 Q330 280 370 180 Q300 200 165 165 Z" fill="currentColor"/>
-                   <!-- Beak Area -->
-                   <path d="M250 440 L210 340 L280 360 Z" fill="currentColor"/>
-                   <path d="M250 440 L310 330 L360 280 Z" fill="currentColor"/>
-                   <!-- Glowing Eye -->
-                   <circle cx="285" cy="210" r="14" fill="#ff0000" id="mascot-eye" />
-                </g>
-            </svg>
-        </div>
-
-        <div id="fluid-container"></div>
-
-        <div id="ui-layer">
-            <header class="hud-header">
-                <div>NODE: BIF_MARKET_ANNIV_X</div>
-                <div class="text-white">YEARS_RECOVERED: <span id="years-val" class="text-red-600">0</span> / 10</div>
-                <div>INTEGRITY: <span id="sync-val">0</span>%</div>
-            </header>
-
-            <div class="terminal-log">
-                <div class="text-red-600 font-bold mb-1">[NEURAL_HARVEST]</div>
-                <p id="instruction-text" class="text-[9px] opacity-60 leading-relaxed uppercase">
-                    10 years of archives are drowning in biological data. <br>
-                    Push the non-newtonian fluid to the borders. <br>
-                    stabilize each year to complete the selection.
-                </p>
-                <div class="progress-bar">
-                    <div id="progress-fill"></div>
+        <main id="game-view">
+            <!-- Start Screen -->
+            <div id="start-screen" class="modal">
+                <h1 class="text-6xl tracking-tighter mb-4 text-white">THE RAVEN VOID</h1>
+                <p class="text-xl max-w-lg mb-6 leading-relaxed">SYSTEM BREACH DETECTED.<br>MASCOT FRAGMENT LOCALIZED.<br>AVOID ANCIENT CORRUPTION.</p>
+                <div class="flex space-x-4 opacity-50 mb-8 text-[12px]">
+                    <div class="border px-4 py-1">[ DRAG TO NAVIGATE ]</div>
                 </div>
+                <button class="btn-action" onclick="startGame()">[ INITIALIZE ]</button>
             </div>
-        </div>
 
-        <!-- START SCREEN -->
-        <div id="boot-screen" class="overlay">
-            <div class="mb-8 opacity-80">
-                <!-- Mini Logo -->
-                <svg width="80" height="80" viewBox="0 0 500 500">
-                    <path d="M160 150 L340 150 L330 60 C330 30, 170 30, 170 60 Z M130 150 L370 150 L370 165 L130 165 Z M165 165 Q160 280 250 440 L290 340 Q330 280 370 180 Q300 200 165 165 Z" fill="red" />
-                </svg>
+            <!-- Game Over -->
+            <div id="game-over" class="modal" style="display: none;">
+                <h2 class="text-7xl mb-4">LINK LOST</h2>
+                <p class="text-xl mb-6">THE SIGNAL HAS BEEN ABSORBED BY THE VOID.</p>
+                <p id="final-stats" class="text-3xl mb-8 text-white"></p>
+                <button class="btn-action" onclick="location.reload()">[ REBOOT ]</button>
             </div>
-            <h1 class="text-3xl font-bold tracking-tighter mb-4 uppercase">Archive Exorcism</h1>
-            <p class="max-w-xs text-[10px] opacity-40 leading-loose uppercase mb-10">
-                The BIF Market archives have congealed. <br>
-                Purge 10 layers of organic interference to unlock the selection. <br>
-                resistance scales per fragment recovered.
-            </p>
-            <button class="btn-molino" onclick="init()">[ Initialize Neural Link ]</button>
-        </div>
 
-        <!-- FINAL SUCCESS -->
-        <div id="freedom-screen" class="overlay" style="display:none">
-            <h1 class="text-6xl font-bold mb-4 tracking-tighter">ARCHIVE_SECURED</h1>
-            <p class="text-[10px] opacity-50 uppercase tracking-widest mb-10">10 Years of BIF Market history restored.</p>
-            <button class="btn-molino" onclick="location.reload()">[ Re-Initialize ]</button>
-        </div>
+            <div class="instruction-footer">NEURAL CONNECTION ESTABLISHED</div>
+        </main>
     </div>
 
     <script>
-        const fluidContainer = document.getElementById('fluid-container');
-        const ravenCore = document.getElementById('raven-core');
-        const ravenSvg = document.getElementById('raven-svg');
-        const syncText = document.getElementById('sync-val');
-        const yearsText = document.getElementById('years-val');
-        const progressFill = document.getElementById('progress-fill');
-        const flash = document.getElementById('flash-effect');
+        const gameView = document.getElementById('game-view');
+        const scoreEl = document.getElementById('score');
+        const rankEl = document.getElementById('rank');
+        const startScreen = document.getElementById('start-screen');
+        const gameOverScreen = document.getElementById('game-over');
+
+        let gameActive = false;
+        let score = 0;
+        let enemies = [];
+        let player = { x: 0, y: 0, targetX: 0, targetY: 0, speed: 0.3, el: null };
         
-        let isRunning = false;
-        let progress = 0;
-        let yearsRecovered = 0;
-        let blobs = [];
-        let pointer = { x: -1000, y: -1000, active: false };
-        let ravenPos = { x: 0, y: 0 };
+        let difficulty = {
+            maxEnemies: 3,
+            speedMin: 1.5,
+            speedMax: 2.6,
+            spawnRate: 0.012
+        };
 
-        const BLOB_COUNT = 22; // Increased for more density
+        // --- ACCURATE IP COMPLIANT MASCOT SVG ---
+        const PLAYER_SVG = `
+            <svg viewBox="0 0 500 500" width="90" height="90">
+                <g transform="translate(10, 20)">
+                    <!-- Hat Crown -->
+                    <path d="M210,145 C205,100 210,65 210,65 C210,65 230,40 300,40 C370,40 390,65 390,65 C390,65 395,100 390,145 Z" fill="white" />
+                    <!-- Brim -->
+                    <path d="M180,145 C180,145 200,165 300,165 C400,165 420,145 420,145 L420,158 C420,158 400,175 300,175 C200,175 180,158 180,158 Z" fill="white" />
+                    <!-- Beak and Face Jagged Silhouette -->
+                    <path d="M220,175 C210,220 220,280 280,380 L320,450 L340,380 C360,350 430,300 440,200 L420,175 Z" fill="white" />
+                    <!-- Jagged Feather Details (Neck) -->
+                    <path d="M280,380 L230,340 L260,330 L220,300 L250,290 L215,260 Z" fill="white" />
+                    <!-- Internal Shadows (Black) -->
+                    <path d="M260,175 C250,200 260,240 300,280 L320,320 L330,280 Q350,240 370,175 Z" fill="black" opacity="0.8" />
+                    <!-- Beak Split -->
+                    <path d="M320,450 L350,380 L440,300" stroke="black" stroke-width="3" fill="none" opacity="0.5" />
+                    <!-- The Iconic Red Eye -->
+                    <path d="M335,190 Q365,190 385,215 Q355,230 335,220 Z" fill="#ff0000" />
+                </g>
+            </svg>
+        `;
 
-        function init() {
-            document.getElementById('boot-screen').style.display = 'none';
-            isRunning = true;
-            createBlobs();
+        // --- PAZUZU ENEMY SVG ---
+        const PAZUZU_SVG = `
+            <svg viewBox="0 0 100 100" width="75" height="75">
+                <g opacity="0.9">
+                    <!-- Wings -->
+                    <path d="M50 45 L15 15 L5 45 L45 55 Z" fill="red" />
+                    <path d="M50 45 L85 15 L95 45 L55 55 Z" fill="red" />
+                    <path d="M50 65 L15 65 L10 85 L45 75 Z" fill="red" />
+                    <path d="M50 65 L85 65 L90 85 L55 75 Z" fill="red" />
+                    <!-- Body -->
+                    <path d="M46 35 L54 35 L52 88 L48 88 Z" fill="red" />
+                    <!-- Head -->
+                    <path d="M42 30 L50 15 L58 30 L55 38 L45 38 Z" fill="red" />
+                    <!-- Details -->
+                    <circle cx="47" cy="32" r="2" fill="black" />
+                    <circle cx="53" cy="32" r="2" fill="black" />
+                    <path d="M48 88 L42 96 L58 96 L52 88 Z" fill="red" />
+                </g>
+            </svg>
+        `;
 
-            window.addEventListener('pointerdown', (e) => { pointer.active = true; updatePointer(e); });
-            window.addEventListener('pointermove', updatePointer);
-            window.addEventListener('pointerup', () => { pointer.active = false; });
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameActive = true;
             
-            document.addEventListener('touchstart', (e) => e.preventDefault(), { passive: false });
-            document.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+            // Player Node
+            player.el = document.createElement('div');
+            player.el.className = 'entity';
+            player.el.innerHTML = PLAYER_SVG;
+            player.x = window.innerWidth / 2;
+            player.y = window.innerHeight / 2;
+            player.targetX = player.x;
+            player.targetY = player.y;
+            gameView.appendChild(player.el);
 
-            requestAnimationFrame(update);
+            const updatePos = (e) => {
+                if (!gameActive) return;
+                const cx = e.touches ? e.touches[0].clientX : e.clientX;
+                const cy = e.touches ? e.touches[0].clientY : e.clientY;
+                const rect = gameView.getBoundingClientRect();
+                player.targetX = cx - rect.left - 45;
+                player.targetY = cy - rect.top - 45;
+            };
+
+            window.addEventListener('mousemove', updatePos);
+            window.addEventListener('touchmove', (e) => {
+                if(e.cancelable) e.preventDefault();
+                updatePos(e);
+            }, { passive: false });
+            window.addEventListener('touchstart', updatePos, { passive: false });
+
+            requestAnimationFrame(gameLoop);
         }
 
-        function createBlobs() {
-            fluidContainer.innerHTML = '';
-            blobs = [];
-            for (let i = 0; i < BLOB_COUNT; i++) {
-                const el = document.createElement('div');
-                el.className = 'blob';
-                fluidContainer.appendChild(el);
-                
-                // Spawn blobs clustered around current center
-                blobs.push({
-                    el: el,
-                    x: window.innerWidth / 2 + ravenPos.x + (Math.random() - 0.5) * 150,
-                    y: window.innerHeight / 2 + ravenPos.y + (Math.random() - 0.5) * 150,
-                    vx: 0, vy: 0,
-                    size: 160 + Math.random() * 80
-                });
-            }
-        }
+        function spawnEnemy() {
+            if (enemies.length >= difficulty.maxEnemies) return;
 
-        function updatePointer(e) {
-            pointer.x = e.clientX;
-            pointer.y = e.clientY;
-        }
+            const side = Math.floor(Math.random() * 4);
+            let x, y;
+            const buffer = 150;
+            if (side === 0) { x = -buffer; y = Math.random() * window.innerHeight; }
+            else if (side === 1) { x = window.innerWidth + buffer; y = Math.random() * window.innerHeight; }
+            else if (side === 2) { x = Math.random() * window.innerWidth; y = -buffer; }
+            else { x = Math.random() * window.innerWidth; y = window.innerHeight + buffer; }
 
-        function update() {
-            if (!isRunning) return;
+            const el = document.createElement('div');
+            el.className = 'entity pazuzu-enemy';
+            el.innerHTML = PAZUZU_SVG;
+            gameView.appendChild(el);
 
-            const centerX = window.innerWidth / 2 + ravenPos.x;
-            const centerY = window.innerHeight / 2 + ravenPos.y;
-            let centerClearance = 0;
-
-            // DIFFICULTY SCALING: Physics get harder each level
-            const gravityForce = 0.0009 + (yearsRecovered * 0.0003);
-            const friction = 0.92 - (yearsRecovered * 0.01);
-            const pushRange = 270 - (yearsRecovered * 6);
-
-            blobs.forEach(b => {
-                // 1. Gravity toward the Raven (the Trap)
-                const dxCenter = centerX - b.x;
-                const dyCenter = centerY - b.y;
-                b.vx += dxCenter * gravityForce;
-                b.vy += dyCenter * gravityForce;
-
-                // 2. Repulsion from User
-                if (pointer.active) {
-                    const dxPointer = b.x - pointer.x;
-                    const dyPointer = b.y - pointer.y;
-                    const distPointer = Math.hypot(dxPointer, dyPointer);
-                    if (distPointer < pushRange) {
-                        const force = (pushRange - distPointer) * 0.03;
-                        b.vx += (dxPointer / distPointer) * force;
-                        b.vy += (dyPointer / distPointer) * force;
-                    }
-                }
-
-                // 3. Update physics
-                b.vx *= friction;
-                b.vy *= friction;
-                b.x += b.vx;
-                b.y += b.vy;
-
-                // Clamping to screen
-                const margin = b.size;
-                if(b.x < -margin) b.x = -margin;
-                if(b.x > window.innerWidth + margin) b.x = window.innerWidth + margin;
-                if(b.y < -margin) b.y = -margin;
-                if(b.y > window.innerHeight + margin) b.y = window.innerHeight + margin;
-
-                const currentSize = b.size + (yearsRecovered * 6);
-                b.el.style.width = currentSize + 'px';
-                b.el.style.height = currentSize + 'px';
-                b.el.style.transform = `translate(${b.x - currentSize/2}px, ${b.y - currentSize/2}px)`;
-
-                const distFromRaven = Math.hypot(b.x - centerX, b.y - centerY);
-                if (distFromRaven > 220) centerClearance++;
+            enemies.push({
+                x, y, el,
+                speed: difficulty.speedMin + Math.random() * (difficulty.speedMax - difficulty.speedMin)
             });
-
-            // Winning condition logic
-            const ratio = centerClearance / BLOB_COUNT;
-            if (ratio > 0.6) {
-                // User is clearing the space!
-                progress = Math.min(100, progress + (0.8 - (yearsRecovered * 0.04)));
-                ravenSvg.style.fill = `rgba(255, 0, 0, ${0.4 + (progress/100)})`;
-                ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(${1 + (progress/250)}) rotate(${progress * 0.2}deg)`;
-                ravenSvg.classList.remove('heartbeat');
-            } else {
-                // Fluid is taking over
-                progress = Math.max(0, progress - (0.2 + (yearsRecovered * 0.06)));
-                ravenSvg.style.fill = '#1a0000';
-                ravenSvg.classList.add('heartbeat');
-            }
-
-            syncText.innerText = Math.floor(progress);
-            progressFill.style.width = progress + '%';
-
-            if (progress >= 100) {
-                recoverYear();
-            } else {
-                requestAnimationFrame(update);
-            }
         }
 
-        function recoverYear() {
-            yearsRecovered++;
-            yearsText.innerText = yearsRecovered;
-            progress = 0;
+        function gameLoop() {
+            if (!gameActive) return;
+
+            // Player Smoothing
+            player.x += (player.targetX - player.x) * player.speed;
+            player.y += (player.targetY - player.y) * player.speed;
             
-            // Success Flash
-            flash.style.opacity = '1';
-            setTimeout(() => {
-                flash.style.opacity = '0';
-            }, 200);
+            const tilt = (player.targetX - player.x) * 0.12;
+            const flip = player.targetX < player.x ? 'scaleX(-1)' : 'scaleX(1)';
+            player.el.style.transform = `translate(${player.x}px, ${player.y}px) rotate(${tilt}deg) ${flip}`;
 
-            if (yearsRecovered >= 10) {
-                finalize();
-            } else {
-                // REPOSITION RAVEN: Move to a new random location on screen
-                const safeZone = 0.5; // Stay within 50% of center area for visibility
-                ravenPos.x = (Math.random() - 0.5) * (window.innerWidth * safeZone);
-                ravenPos.y = (Math.random() - 0.5) * (window.innerHeight * safeZone);
+            // Pazuzu Mechanics
+            for (let i = enemies.length - 1; i >= 0; i--) {
+                let e = enemies[i];
+                const dx = player.x - e.x;
+                const dy = player.y - e.y;
+                const dist = Math.hypot(dx, dy);
                 
-                // Immediately apply position so game loop picks it up
-                ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(1)`;
-                
-                // Small nudge to blobs to prevent immediate suffocation
-                blobs.forEach(b => {
-                    b.x += (Math.random() - 0.5) * 200;
-                    b.y += (Math.random() - 0.5) * 200;
-                });
+                e.x += (dx / dist) * e.speed;
+                e.y += (dy / dist) * e.speed;
 
-                // Continue game loop
-                requestAnimationFrame(update);
+                const pulse = 1 + Math.sin(Date.now() * 0.007) * 0.08;
+                const eFlip = dx < 0 ? 'scaleX(-1)' : 'scaleX(1)';
+                e.el.style.transform = `translate(${e.x}px, ${e.y}px) ${eFlip} scale(${pulse})`;
+
+                // Collision
+                if (dist < 55) {
+                    endGame();
+                    return;
+                }
             }
+
+            // Progression
+            score++;
+            if (score % 4 === 0) scoreEl.innerText = score.toString().padStart(5, '0');
+
+            if (score % 600 === 0) {
+                difficulty.maxEnemies += 1;
+                difficulty.speedMin += 0.15;
+                difficulty.speedMax += 0.15;
+                
+                if (score > 1200) rankEl.innerText = "FANATIC";
+                if (score > 3500) rankEl.innerText = "EXORCIST";
+                if (score > 8000) rankEl.innerText = "VOID_MASTER";
+            }
+
+            if (Math.random() < difficulty.spawnRate) spawnEnemy();
+
+            requestAnimationFrame(gameLoop);
         }
 
-        function finalize() {
-            isRunning = false;
-            // Cinematic flight out of screen
-            ravenCore.style.transition = 'all 1.3s cubic-bezier(0.6, -0.28, 0.735, 0.045)';
-            ravenCore.style.transform = `translate(${ravenPos.x}px, ${ravenPos.y}px) scale(60) rotate(1440deg)`;
-            ravenCore.style.opacity = '0';
-            
-            setTimeout(() => {
-                document.getElementById('freedom-screen').style.display = 'flex';
-            }, 1000);
+        function endGame() {
+            gameActive = false;
+            gameOverScreen.style.display = 'flex';
+            document.getElementById('final-stats').innerText = `RUNTIME: ${Math.floor(score/60)}s | SIGNAL: ${score}`;
+            player.el.style.filter = "invert(1) blur(12px) brightness(1.5)";
+            player.el.style.transition = "all 1s ease-out";
         }
     </script>
-
-    <style>
-        #flash-effect { transition: opacity 0.5s ease; pointer-events: none; }
-    </style>
 </body>
 </html>
+
+```
