@@ -4,329 +4,339 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>BIF-OS // ANTHOLOGY 10.0</title>
-    
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-
     <style>
-        body { margin: 0; padding: 0; background-color: black; font-family: 'Space Mono', monospace; overflow: hidden; }
-        .crt-overlay {
-            pointer-events: none;
-            position: absolute;
-            inset: 0;
-            z-index: 999;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
-            background-size: 100% 4px, 3px 100%;
-            opacity: 0.2;
-        }
+        body { margin: 0; padding: 0; background-color: black; font-family: 'Space Mono', monospace; overflow: hidden; touch-action: none; color: white; }
+        .crt-overlay { pointer-events: none; position: absolute; inset: 0; z-index: 999; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05)); background-size: 100% 4px, 3px 100%; opacity: 0.2; }
         .perspective-view { perspective: 1000px; }
-        .pixel-text { text-shadow: 2px 2px 0px #7a0000; }
         @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
         .scanline { position: absolute; width: 100%; height: 100px; background: linear-gradient(to bottom, transparent, rgba(255,0,0,0.1), transparent); animation: scan 8s linear infinite; }
+        .hidden { display: none !important; }
+        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
+        .entity { position: absolute; will-change: transform; pointer-events: none; }
+        .projectile { position: absolute; background: white; width: 4px; height: 10px; border-radius: 2px; box-shadow: 0 0 8px white; z-index: 30; }
+        .pixel-text { text-shadow: 0 0 10px rgba(255,0,0,0.8); }
     </style>
 </head>
 <body>
-    <div id="root"></div>
+    <div class="crt-overlay"></div>
+    <div class="scanline"></div>
 
-    <script type="text/babel">
-        const { useState, useEffect, useRef, useMemo } = React;
+    <div id="game-container">
+        <!-- HUD -->
+        <header id="hud" class="absolute top-0 w-full p-6 flex justify-between items-center z-50 border-b border-red-900/30 bg-black/50 backdrop-blur-md hidden">
+            <div class="flex flex-col gap-1">
+                <span class="text-[10px] text-red-500 opacity-60 uppercase tracking-widest">Neural_Sync</span>
+                <div id="life-container" class="flex gap-1.5"></div>
+            </div>
+            <div class="text-center">
+                <h2 id="level-name" class="text-sm font-bold tracking-[0.3em] uppercase">PHASE_NAME</h2>
+                <span id="timer-text" class="text-[10px] text-zinc-500 font-bold">10s TO STABILIZE</span>
+            </div>
+            <div class="text-right">
+                <span class="text-[10px] text-red-500 opacity-60 uppercase">Year</span>
+                <div id="year-text" class="text-xl font-bold text-white">2017</div>
+            </div>
+        </header>
 
-        const RAVEN_PATH = "M210,145 C205,100 210,65 210,65 C210,65 230,40 300,40 C370,40 390,65 390,65 C390,65 395,100 390,145 Z M180,145 C180,145 200,165 300,165 C400,165 420,145 420,145 L420,158 C420,158 400,175 300,175 C200,175 180,158 180,158 Z M220,175 C210,220 220,280 280,380 L320,450 L340,380 C360,350 430,300 440,200 L420,175 Z M280,380 L230,340 L260,330 L220,300 L250,290 L215,260 Z M260,175 C250,200 260,240 300,280 L320,320 L330,280 Q350,240 370,175 Z";
-        const PAZUZU_PATH = "M50 45 L15 15 L5 45 L45 55 Z M50 45 L85 15 L95 45 L55 55 Z M50 65 L15 65 L10 85 L45 75 Z M50 65 L85 65 L90 85 L55 75 Z M46 35 L54 35 L52 88 L48 88 Z M42 30 L50 15 L58 30 L55 38 L45 38 Z";
+        <!-- Dynamic Content Layer -->
+        <div id="world" class="w-full h-full relative"></div>
+
+        <!-- Screens -->
+        <div id="start-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center p-12 text-center border-[15px] border-double border-red-900/20 m-4">
+            <h1 class="text-6xl font-bold italic mb-4 tracking-tighter uppercase pixel-text italic">BIF-OS // ANTHOLOGY</h1>
+            <p class="text-red-600 max-w-sm text-[10px] tracking-[0.4em] uppercase mb-12 leading-relaxed font-bold">10 YEARS OF HISTORY. 3 NEURAL ATTEMPTS. <br/> RESTORE THE RAVEN ARCHIVE.</p>
+            <div class="flex flex-col gap-5">
+                <button onclick="gameState.init(false)" class="border-2 border-red-600 px-12 py-4 text-red-600 font-bold tracking-[0.5em] hover:bg-red-600 hover:text-black transition-all uppercase">[ Initialize Survival ]</button>
+                <button onclick="gameState.init(true)" class="text-zinc-600 text-[9px] hover:text-red-500 transition-colors uppercase">[ Auto-Demo Mode ]</button>
+            </div>
+        </div>
+
+        <div id="intro-screen" class="absolute inset-0 bg-black/95 backdrop-blur-xl z-[300] flex flex-col items-center justify-center p-10 text-center hidden">
+            <span id="intro-year" class="text-red-500 text-[10px] mb-2 tracking-[1em] uppercase opacity-50">Year Loading</span>
+            <h2 id="intro-name" class="text-6xl font-bold italic mb-6 text-white tracking-tighter uppercase">LEVEL_NAME</h2>
+            <p id="intro-desc" class="max-w-md text-xs text-red-600/80 uppercase tracking-[0.2em] border-t border-red-900/30 pt-6 leading-loose">LEVEL_DESC</p>
+        </div>
+
+        <div id="retry-screen" class="absolute inset-0 bg-red-950/60 backdrop-blur-lg z-[300] flex flex-col items-center justify-center text-center p-8 hidden">
+            <h2 class="text-6xl text-white font-bold mb-4 tracking-tighter uppercase">Integrity Loss</h2>
+            <p id="lives-left-text" class="text-xs tracking-[0.5em] mb-12 opacity-80 uppercase">N Neural Syncs Left.</p>
+            <button onclick="gameState.resume()" class="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ Resume Phase ]</button>
+        </div>
+
+        <div id="gameover-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center p-8 border-t-8 border-red-600 hidden">
+            <h1 class="text-7xl text-red-600 font-bold mb-4 tracking-tighter uppercase">Total Purge</h1>
+            <p class="text-xs tracking-[0.3em] mb-12 opacity-50 uppercase leading-loose text-white">Neural feedback failure. <br/> Re-starting Archives from Year One.</p>
+            <button onclick="location.reload()" class="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Reboot ]</button>
+        </div>
+
+        <div id="win-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center border-4 border-white m-10 hidden">
+            <h1 class="text-7xl font-bold italic mb-6 tracking-tighter uppercase text-white drop-shadow-[0_0_20px_red]">Legacy Secured</h1>
+            <p class="text-red-600 text-[10px] tracking-[0.5em] mb-12 uppercase font-bold">All 10 years of history have been stabilized.</p>
+            <button onclick="location.reload()" class="border-2 border-white px-12 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Disconnect ]</button>
+        </div>
+    </div>
+
+    <script>
+        const RAVEN_SVG = `<svg viewBox="0 0 500 500" class="w-full h-full drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
+            <path d="M210,145 C205,100 210,65 210,65 C210,65 230,40 300,40 C370,40 390,65 390,65 C390,65 395,100 390,145 Z M180,145 C180,145 200,165 300,165 C400,165 420,145 420,145 L420,158 C420,158 400,175 300,175 C200,175 180,158 180,158 Z M220,175 C210,220 220,280 280,380 L320,450 L340,380 C360,350 430,300 440,200 L420,175 Z M280,380 L230,340 L260,330 L220,300 L250,290 L215,260 Z M260,175 C250,200 260,240 300,280 L320,320 L330,280 Q350,240 370,175 Z" fill="white" />
+            <path d="M335,190 Q365,190 385,215 Q355,230 335,220 Z" fill="#ff0000" />
+        </svg>`;
+        
+        const PAZUZU_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 45 L15 15 L5 45 L45 55 Z M50 45 L85 15 L95 45 L55 55 Z M50 65 L15 65 L10 85 L45 75 Z M50 65 L85 65 L90 85 L55 75 Z M46 35 L54 35 L52 88 L48 88 Z M42 30 L50 15 L58 30 L55 38 L45 38 Z" fill="red" /></svg>`;
 
         const LEVELS = [
-            { id: 1, name: "PONG_BREACH", desc: "DEFLECT THE VIRUS BALL. USE THE RAVEN AS A SHIELD.", year: 2017 },
-            { id: 2, name: "DUCK_HUNT", desc: "TARGET DETECTED. TAP THE PAZUZUS TO NEUTRALIZE.", year: 2018 },
-            { id: 3, name: "DATA_INVADERS", desc: "LOCKED AT BASE. TAP TO SHOOT AND STOP THE INVASION.", year: 2019 },
-            { id: 4, name: "TERMINAL_DOOM", desc: "PSEUDO-3D BREACH. TAP TO FIRE INTO THE DEPTHS.", year: 2020 },
-            { id: 5, name: "GHOST_HUNTER", desc: "EVADE THE PURSUIT IN THE DATA VOID.", year: 2021 },
-            { id: 6, name: "DATA_HIGHWAY", desc: "FROGGER PROTOCOL. CROSS THE FLOW WITHOUT COLLISION.", year: 2022 },
-            { id: 7, name: "TETRIS_CRUSH", desc: "DATA BLOCKS FALLING. FIND THE GAP TO SURVIVE.", year: 2023 },
-            { id: 8, name: "ASTEROIDS", desc: "MULTI-DIRECTIONAL COMBAT. TAP TO BLAST DEBRIS.", year: 2024 },
-            { id: 9, name: "CENTIPEDE", desc: "SEGMENTED THREAT. SHOOT THE CHAINS FROM THE BOTTOM.", year: 2025 },
-            { id: 10, name: "GLITCH_REALITY", desc: "TOTAL CHAOS. ALL SYSTEMS COMBINED. SURVIVE.", year: 2026 },
+            { id: 1, name: "PONG_BREACH", desc: "DEFLECT THE BALL. USE RAVEN AS SHIELD.", year: 2017 },
+            { id: 2, name: "DUCK_HUNT", desc: "TARGET DETECTED. TAP PAZUZUS TO KILL.", year: 2018 },
+            { id: 3, name: "DATA_INVADERS", desc: "LOCKED AT BASE. TAP TO SHOOT UPWARD.", year: 2019 },
+            { id: 4, name: "TERMINAL_DOOM", desc: "PSEUDO-3D. TAP TO SHOOT INTO DEPTHS.", year: 2020 },
+            { id: 5, name: "GHOST_HUNTER", desc: "PAC-MAN MODE. EVADE THE PURSUIT.", year: 2021 },
+            { id: 6, name: "DATA_HIGHWAY", desc: "FROGGER. CROSS WITHOUT COLLIDING.", year: 2022 },
+            { id: 7, name: "TETRIS_CRUSH", desc: "AVOID FALLING BLOCKS. FIND THE GAP.", year: 2023 },
+            { id: 8, name: "ASTEROIDS", desc: "DANGER DRIFT. TAP TO SHOOT DEBRIS.", year: 2024 },
+            { id: 9, name: "CENTIPEDE", desc: "SHOOT THE SEGMENTS FROM THE BOTTOM.", year: 2025 },
+            { id: 10, name: "GLITCH_REALITY", desc: "TOTAL CHAOS. SURVIVE EVERYTHING.", year: 2026 },
         ];
 
-        const App = () => {
-            const [gameState, setGameState] = useState('START'); // START, INTRO, PLAYING, RETRY, GAMEOVER, WIN
-            const [level, setLevel] = useState(1);
-            const [lives, setLives] = useState(3);
-            const [timeLeft, setTimeLeft] = useState(10);
-            const [isDemo, setIsDemo] = useState(false);
-            const [score, setScore] = useState(0);
+        const gameState = {
+            level: 0, lives: 3, timeLeft: 10, isDemo: false, isPlaying: false,
+            player: { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0 },
+            entities: [], projectiles: [],
+            
+            init(demo) {
+                this.isDemo = demo;
+                this.lives = demo ? 99 : 3;
+                document.getElementById('start-screen').classList.add('hidden');
+                document.getElementById('hud').classList.remove('hidden');
+                this.loadLevel(1);
+            },
 
-            const requestRef = useRef();
-            const playerRef = useRef({ x: window.innerWidth/2, y: window.innerHeight/2, tx: window.innerWidth/2, ty: window.innerHeight/2 });
-            const entitiesRef = useRef([]);
-            const projsRef = useRef([]);
-
-            const handleStart = (demo = false) => {
-                setIsDemo(demo);
-                setScore(0);
-                setLives(demo ? 99 : 3);
-                loadLevel(1);
-            };
-
-            const loadLevel = (lvl) => {
-                setLevel(lvl);
-                setGameState('INTRO');
-                entitiesRef.current = [];
-                projsRef.current = [];
+            loadLevel(num) {
+                this.level = num;
+                this.isPlaying = false;
+                const lvl = LEVELS[num-1];
+                
+                document.getElementById('intro-screen').classList.remove('hidden');
+                document.getElementById('intro-year').innerText = `Year ${lvl.year} Loading`;
+                document.getElementById('intro-name').innerText = lvl.name;
+                document.getElementById('intro-desc').innerText = lvl.desc;
                 
                 setTimeout(() => {
-                    setupLevel(lvl);
-                    setGameState('PLAYING');
-                    setTimeLeft(10);
+                    document.getElementById('intro-screen').classList.add('hidden');
+                    this.startPhase();
                 }, 2000);
-            };
+            },
 
-            const setupLevel = (lvl) => {
+            startPhase() {
                 const w = window.innerWidth;
                 const h = window.innerHeight;
-                playerRef.current.tx = w / 2;
-                playerRef.current.ty = (lvl === 1 || lvl === 3 || lvl === 9 || lvl === 7) ? h - 120 : h / 2;
+                this.entities = [];
+                this.projectiles = [];
+                this.timeLeft = 10;
+                this.isPlaying = true;
+                this.player.x = w / 2;
+                this.player.tx = w / 2;
+                this.player.y = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7) ? h - 120 : h / 2;
+                this.player.ty = this.player.y;
+                
+                document.getElementById('world').innerHTML = '';
+                this.updateHUD();
 
-                if (lvl === 1) {
-                    entitiesRef.current = [{ x: w / 2, y: 100, vx: 4, vy: 4, size: 50, id: 1 }];
-                } else if (lvl === 3) {
-                    for (let i = 0; i < 15; i++) {
-                        entitiesRef.current.push({ x: (i % 5) * 120 + 100, y: Math.floor(i / 5) * 60 + 80, vx: 1.5, vy: 0, size: 45, id: i });
-                    }
+                if (this.level === 1) this.spawnEntity({ x: w / 2, y: 100, vx: 4, vy: 4, size: 50, type: 'ball' });
+                if (this.level === 3) {
+                    for(let i=0; i<15; i++) this.spawnEntity({ x: (i%5)*120+100, y: Math.floor(i/5)*70+100, vx: 1.5, vy: 0, size: 45, type: 'invader' });
                 }
-            };
 
-            const handleDeath = () => {
-                if (isDemo) return;
-                const nextLives = lives - 1;
-                setLives(nextLives);
-                if (nextLives > 0) setGameState('RETRY');
-                else setGameState('GAMEOVER');
-            };
+                this.lastTick = performance.now();
+                requestAnimationFrame((t) => this.tick(t));
+                this.timerInterval = setInterval(() => {
+                    this.timeLeft--;
+                    this.updateHUD();
+                    if (this.timeLeft <= 0) {
+                        clearInterval(this.timerInterval);
+                        if (this.level === 10) this.win();
+                        else this.loadLevel(this.level + 1);
+                    }
+                }, 1000);
+            },
 
-            const gameLoop = (t) => {
-                if (gameState !== 'PLAYING') return;
+            spawnEntity(data) {
+                const el = document.createElement('div');
+                el.className = 'entity';
+                el.innerHTML = PAZUZU_SVG;
+                document.getElementById('world').appendChild(el);
+                const ent = { ...data, el };
+                this.entities.push(ent);
+                return ent;
+            },
 
-                const p = playerRef.current;
+            spawnProj(data) {
+                const el = document.createElement('div');
+                el.className = 'projectile';
+                document.getElementById('world').appendChild(el);
+                this.projectiles.push({ ...data, el });
+            },
+
+            tick(t) {
+                if (!this.isPlaying) return;
+                
                 const w = window.innerWidth;
                 const h = window.innerHeight;
-
+                
                 // Move Player
-                const lockY = (level === 1 || level === 3 || level === 9 || level === 7);
-                p.x += (p.tx - p.x) * 0.15;
-                if (!lockY) p.y += (p.ty - p.y) * 0.15;
-                else p.y = h - 120;
+                const lockY = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7);
+                this.player.x += (this.player.tx - this.player.x) * 0.15;
+                if (!lockY) this.player.y += (this.player.ty - this.player.y) * 0.15;
 
-                const entities = entitiesRef.current;
-                const projs = projsRef.current;
+                // Move Entities
+                this.entities.forEach((en, i) => {
+                    switch(this.level) {
+                        case 1: // Pong
+                            en.x += en.vx; en.y += en.vy;
+                            if (en.x < 20 || en.x > w - 70) en.vx *= -1;
+                            if (en.y < 80) en.vy *= -1;
+                            if (en.y > this.player.y - 40 && en.x > this.player.x - 70 && en.x < this.player.x + 70) {
+                                en.vy *= -1.02; en.y = this.player.y - 45;
+                            }
+                            if (en.y > h) this.die();
+                            break;
+                        case 3: // Invaders
+                            en.x += en.vx;
+                            if (en.x > w - 60 || en.x < 40) { this.invaderReverse = true; }
+                            if (Math.hypot(this.player.x - en.x, this.player.y - en.y) < 45) this.die();
+                            break;
+                        case 4: // Doom (3D)
+                            en.z = (en.z || 0) + 0.015;
+                            if (en.z > 0.95 && Math.hypot(this.player.x - en.x, this.player.y - en.y) < 70) this.die();
+                            break;
+                        case 7: // Tetris
+                            en.y += 5;
+                            if (Math.abs(this.player.x - en.x) < 55 && Math.abs(this.player.y - en.y) < 55) this.die();
+                            break;
+                        default: // Chasers
+                            const dx = this.player.x - en.x, dy = this.player.y - en.y, dist = Math.hypot(dx, dy);
+                            en.x += (dx / dist) * (en.speed || 2);
+                            en.y += (dy / dist) * (en.speed || 2);
+                            if (dist < 45) this.die();
+                    }
+                    
+                    let transform = `translate(${en.x - en.size/2}px, ${en.y - en.size/2}px)`;
+                    if (this.level === 4) transform = `translate(${en.x - (en.size*en.z*10)/2}px, ${en.y - (en.size*en.z*10)/2}px) scale(${en.z * 10})`;
+                    en.el.style.transform = transform;
+                    en.el.style.width = en.size + 'px';
+                    en.el.style.height = en.size + 'px';
+                    en.el.style.opacity = this.level === 4 ? en.z : 1;
+                });
 
-                // Move Projectiles
-                for(let i = projs.length - 1; i >= 0; i--) {
-                    const pr = projs[i];
+                if (this.invaderReverse) {
+                    this.entities.forEach(en => { en.vx *= -1; en.y += 20; });
+                    this.invaderReverse = false;
+                }
+
+                // Random Spawns
+                if (Math.random() < 0.03) {
+                    if (this.level === 2) this.spawnEntity({ x: Math.random()*w, y: h+50, vx: (Math.random()-0.5)*8, vy: -12, size: 50, speed: 2 });
+                    if (this.level === 4) this.spawnEntity({ x: Math.random()*w, y: Math.random()*h, z: 0, size: 10 });
+                    if (this.level === 7) this.spawnEntity({ x: Math.floor(Math.random()*(w/100))*100+50, y: -100, size: 100 });
+                    if (this.level >= 5 && this.level !== 7 && this.level !== 9) this.spawnEntity({ x: Math.random()*w, y: -50, size: 50, speed: 1.5 + this.level*0.2 });
+                }
+
+                // Projectiles
+                this.projectiles.forEach((pr, i) => {
                     pr.x += pr.vx; pr.y += pr.vy;
-                    entities.forEach((en, eIdx) => {
+                    pr.el.style.transform = `translate(${pr.x}px, ${pr.y}px)`;
+                    this.entities.forEach((en, ei) => {
                         if (Math.hypot(pr.x - en.x, pr.y - en.y) < en.size) {
-                            entities.splice(eIdx, 1);
-                            projs.splice(i, 1);
-                            setScore(s => s + 50);
+                            en.el.remove(); this.entities.splice(ei, 1);
+                            pr.el.remove(); this.projectiles.splice(i, 1);
                         }
                     });
-                    if (pr.y < -50 || pr.y > h + 50 || pr.x < -50 || pr.x > w + 50) projs.splice(i, 1);
+                    if (pr.y < -50 || pr.y > h+50) { pr.el.remove(); this.projectiles.splice(i, 1); }
+                });
+
+                this.renderPlayer();
+                requestAnimationFrame((t) => this.tick(t));
+            },
+
+            renderPlayer() {
+                let pEl = document.getElementById('player');
+                if (!pEl) {
+                    pEl = document.createElement('div');
+                    pEl.id = 'player';
+                    pEl.className = 'entity z-40';
+                    pEl.style.width = '90px'; pEl.style.height = '90px';
+                    pEl.innerHTML = RAVEN_SVG;
+                    document.getElementById('world').appendChild(pEl);
                 }
+                const tilt = (this.player.tx - this.player.x) * 0.12;
+                const flip = this.player.tx < this.player.x ? -1 : 1;
+                pEl.style.transform = `translate(${this.player.x - 45}px, ${this.player.y - 45}px) rotate(${tilt}deg) scaleX(${flip})`;
+            },
 
-                // Level Logic
-                switch(level) {
-                    case 1: // Pong
-                        const ball = entities[0];
-                        if (ball) {
-                            ball.x += ball.vx; ball.y += ball.vy;
-                            if (ball.x < 50 || ball.x > w - 100) ball.vx *= -1;
-                            if (ball.y < 80) ball.vy *= -1;
-                            if (ball.y > p.y - 40 && ball.x > p.x - 70 && ball.x < p.x + 70) {
-                                ball.vy *= -1.02; ball.y = p.y - 45;
-                            }
-                            if (ball.y > h + 50) handleDeath();
-                        }
-                        break;
-                    case 2: // Duck Hunt
-                        if (Math.random() < 0.04) entities.push({ x: Math.random() * w, y: h + 50, vx: (Math.random() - 0.5) * 8, vy: -11, size: 55, id: Date.now() });
-                        entities.forEach(en => {
-                            en.vy += 0.22; en.x += en.vx; en.y += en.vy;
-                            if (Math.hypot(p.x - en.x, p.y - en.y) < 45) handleDeath();
-                        });
-                        break;
-                    case 3: // Invaders
-                        let bounce = false;
-                        entities.forEach(en => { en.x += en.vx; if (en.x > w - 80 || en.x < 40) bounce = true; if (Math.hypot(p.x - en.x, p.y - en.y) < 45) handleDeath(); });
-                        if (bounce) entities.forEach(en => { en.vx *= -1; en.y += 12; });
-                        break;
-                    case 4: // Doom
-                        if (Math.random() < 0.08) entities.push({ z: 0, x: Math.random() * w, y: Math.random() * h, size: 5, id: Date.now() });
-                        entities.forEach(en => { en.z += 0.015; if (en.z > 0.95 && Math.hypot(p.x - en.x, p.y - en.y) < 70) handleDeath(); });
-                        break;
-                    case 7: // Tetris
-                        if (Math.random() < 0.06) entities.push({ x: Math.floor(Math.random() * (w / 120)) * 120 + 60, y: -100, size: 100, id: Date.now() });
-                        entities.forEach(en => { en.y += 5; if (Math.abs(p.x - en.x) < 55 && Math.abs(p.y - en.y) < 55) handleDeath(); });
-                        break;
-                    case 9: // Centipede
-                        if (entities.length < 5) {
-                            const sx = Math.random() * w;
-                            for(let i=0; i<8; i++) entities.push({ x: sx + (i*30), y: 100, vx: 2, vy: 0, size: 30, id: Date.now()+i });
-                        }
-                        entities.forEach(en => { en.x += en.vx; if (en.x > w - 30 || en.x < 30) { en.vx *= -1; en.y += 30; } if (Math.hypot(p.x - en.x, p.y - en.y) < 30) handleDeath(); });
-                        break;
-                    default: // Chase
-                        if (Math.random() < 0.04 + (level * 0.005)) entities.push({ x: Math.random() * w, y: -100, speed: 1.5 + level * 0.2, id: Date.now(), size: 50 });
-                        entities.forEach(en => {
-                            const dx = p.x - en.x; const dy = p.y - en.y; const d = Math.hypot(dx, dy);
-                            en.x += (dx / d) * en.speed; en.y += (dy / d) * en.speed;
-                            if (d < 45) handleDeath();
-                        });
-                }
-
-                requestRef.current = requestAnimationFrame(gameLoop);
-            };
-
-            const interact = (e) => {
-                if (gameState !== 'PLAYING') return;
+            interact(e) {
+                if (!this.isPlaying) return;
                 const cx = e.touches ? e.touches[0].clientX : e.clientX;
                 const cy = e.touches ? e.touches[0].clientY : e.clientY;
-                const p = playerRef.current;
-                p.tx = cx;
-                if (!(level === 1 || level === 3 || level === 9 || level === 7)) p.ty = cy;
+                this.player.tx = cx;
+                const lockY = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7);
+                if (!lockY) this.player.ty = cy;
 
                 if (e.type === 'mousedown' || e.type === 'touchstart') {
-                    // Shoot mechanic
-                    if (level === 2 || level === 4) { // Hitscan
-                        entitiesRef.current = entitiesRef.current.filter(en => {
+                    if (this.level === 2 || this.level === 4) {
+                        this.entities = this.entities.filter(en => {
                             const d = Math.hypot(cx - en.x, cy - en.y);
-                            if (d < (level === 4 ? en.size * 2 : en.size) + 30) { setScore(s => s + 100); return false; }
+                            if (d < (this.level === 4 ? en.size * 5 : en.size) + 40) { en.el.remove(); return false; }
                             return true;
                         });
-                    } else if (level === 3 || level === 8 || level === 9) { // Projectile
-                        projsRef.current.push({ x: p.x, y: p.y, vx: level === 8 ? (cx - p.x) * 0.05 : 0, vy: level === 8 ? (cy - p.y) * 0.05 : -10, id: Math.random() });
+                    } else if ([3, 8, 9, 10].includes(this.level)) {
+                        this.spawnProj({ x: this.player.x, y: this.player.y, vx: 0, vy: -10 });
                     }
                 }
-            };
+            },
 
-            useEffect(() => {
-                if (gameState === 'PLAYING') {
-                    requestRef.current = requestAnimationFrame(gameLoop);
-                    const t = setInterval(() => {
-                        setTimeLeft(prev => {
-                            if (prev <= 1) {
-                                clearInterval(t);
-                                if (level === 10) setGameState('WIN');
-                                else loadLevel(level + 1);
-                                return 0;
-                            }
-                            return prev - 1;
-                        });
-                    }, 1000);
-                    return () => { cancelAnimationFrame(requestRef.current); clearInterval(t); };
+            updateHUD() {
+                document.getElementById('level-name').innerText = LEVELS[this.level-1].name;
+                document.getElementById('year-text').innerText = LEVELS[this.level-1].year;
+                document.getElementById('timer-text').innerText = `${this.timeLeft}s TO STABILIZE`;
+                const container = document.getElementById('life-container');
+                container.innerHTML = '';
+                for(let i=0; i<(this.isDemo?1:this.lives); i++) {
+                    const dot = document.createElement('div');
+                    dot.className = 'w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_red]';
+                    container.appendChild(dot);
                 }
-            }, [gameState, level]);
+            },
 
-            return (
-                <div className="w-screen h-screen bg-black overflow-hidden relative cursor-crosshair select-none text-white" 
-                     onMouseMove={interact} onMouseDown={interact} onTouchMove={interact} onTouchStart={interact}>
-                    
-                    <div className="crt-overlay"></div>
-                    <div className="scanline"></div>
+            die() {
+                if (this.isDemo || !this.isPlaying) return;
+                this.isPlaying = false;
+                clearInterval(this.timerInterval);
+                this.lives--;
+                if (this.lives > 0) {
+                    document.getElementById('lives-left-text').innerText = `${this.lives} Neural Syncs Left.`;
+                    document.getElementById('retry-screen').classList.remove('hidden');
+                } else {
+                    document.getElementById('gameover-screen').classList.remove('hidden');
+                }
+            },
 
-                    {/* HUD */}
-                    <header className="absolute top-0 w-full p-6 flex justify-between items-center z-50 border-b border-red-900/30 bg-black/50 backdrop-blur-md">
-                        <div className="flex flex-col gap-1">
-                            <span className="text-[10px] text-red-500 opacity-60 uppercase tracking-widest">Neural_Sync</span>
-                            <div className="flex gap-1.5">
-                                {[...Array(isDemo ? 1 : lives)].map((_, i) => (
-                                    <div key={i} className="w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_red]"></div>
-                                ))}
-                            </div>
-                        </div>
-                        <div className="text-center">
-                            <h2 className="text-sm font-bold tracking-[0.3em] uppercase">{LEVELS[level-1].name}</h2>
-                            <span className={`text-[10px] ${timeLeft < 3 ? 'text-red-500 animate-pulse' : 'text-zinc-500'}`}>{timeLeft}s TO STABILIZE</span>
-                        </div>
-                        <div className="text-right">
-                            <span className="text-[10px] text-red-500 opacity-60 uppercase">Year</span>
-                            <div className="text-xl font-bold">{LEVELS[level-1].year}</div>
-                        </div>
-                    </header>
+            resume() {
+                document.getElementById('retry-screen').classList.add('hidden');
+                this.startPhase();
+            },
 
-                    {/* GAME WORLD */}
-                    <main className={`w-full h-full relative ${level === 4 ? 'perspective-view' : ''}`}>
-                        {gameState === 'PLAYING' && (
-                            <>
-                                {projsRef.current.map(pr => (
-                                    <div key={pr.id} className="absolute bg-white w-1.5 h-3 rounded-full shadow-[0_0_8px_white]" style={{ left: pr.x, top: pr.y }} />
-                                ))}
-                                <div className="absolute z-40 transition-transform duration-75" style={{ left: playerRef.current.x - 45, top: playerRef.current.y - 45, width: '90px', height: '90px', transform: `rotate(${(playerRef.current.tx - playerRef.current.x) * 0.12}deg) ${playerRef.current.tx < playerRef.current.x ? 'scaleX(-1)' : 'scaleX(1)'}` }}>
-                                    <svg viewBox="0 0 500 500" className="w-full h-full drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-                                        <path d={RAVEN_PATH} fill="white" />
-                                        <path d="M335,190 Q365,190 385,215 Q355,230 335,220 Z" fill="#ff0000" />
-                                    </svg>
-                                </div>
-                                {entitiesRef.current.map(en => (
-                                    <div key={en.id} className="absolute" style={{ left: en.x - (en.size/2), top: en.y - (en.size/2), width: en.size + 'px', height: en.size + 'px', transform: level === 4 ? `translateZ(${en.z * 800}px) scale(${en.z * 5})` : 'none', opacity: level === 4 ? en.z : 1 }}>
-                                        <svg viewBox="0 0 100 100" className="w-full h-full"><path d={PAZUZU_PATH} fill="red" /></svg>
-                                    </div>
-                                ))}
-                            </>
-                        )}
-                    </main>
-
-                    {/* SCREENS */}
-                    {gameState === 'START' && (
-                        <div className="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center p-12 text-center border-[20px] border-double border-red-900/20 m-4">
-                            <h1 className="text-6xl font-bold italic mb-4 tracking-tighter uppercase pixel-text italic">BIF-OS // ANTHOLOGY</h1>
-                            <p className="text-red-600 max-w-sm text-[10px] tracking-[0.4em] uppercase mb-12 leading-relaxed font-bold">10 YEARS OF HISTORY. 3 NEURAL ATTEMPTS. <br/> RESTORE THE RAVEN ARCHIVE.</p>
-                            <div className="flex flex-col gap-5">
-                                <button onClick={() => handleStart(false)} className="border-2 border-red-600 px-12 py-4 text-red-600 font-bold tracking-[0.5em] hover:bg-red-600 hover:text-black transition-all uppercase">[ Initialize Survival ]</button>
-                                <button onClick={() => handleStart(true)} className="text-zinc-600 text-[9px] hover:text-red-500 transition-colors uppercase">[ Auto-Demo Mode ]</button>
-                            </div>
-                        </div>
-                    )}
-
-                    {gameState === 'INTRO' && (
-                        <div className="absolute inset-0 bg-black/95 backdrop-blur-xl z-[300] flex flex-col items-center justify-center p-10 text-center">
-                            <span className="text-red-500 text-[10px] mb-2 tracking-[1em] uppercase opacity-50">Year {LEVELS[level-1].year} Loading</span>
-                            <h2 className="text-6xl font-bold italic mb-6 text-white tracking-tighter uppercase">{LEVELS[level-1].name}</h2>
-                            <p className="max-w-md text-xs text-red-600/80 uppercase tracking-[0.2em] border-t border-red-900/30 pt-6 leading-loose">{LEVELS[level-1].desc}</p>
-                        </div>
-                    )}
-
-                    {gameState === 'RETRY' && (
-                        <div className="absolute inset-0 bg-red-950/40 backdrop-blur-lg z-[300] flex flex-col items-center justify-center text-center p-8">
-                            <h2 className="text-6xl text-white font-bold mb-4 tracking-tighter uppercase">Integrity Compromised</h2>
-                            <p className="text-xs tracking-[0.5em] mb-12 opacity-80 uppercase">{lives} Neural Syncs Left.</p>
-                            <button onClick={() => loadLevel(level)} className="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ Resume YEAR {LEVELS[level-1].year} ]</button>
-                        </div>
-                    )}
-
-                    {gameState === 'GAMEOVER' && (
-                        <div className="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center p-8 border-t-8 border-red-600">
-                            <h1 className="text-7xl text-red-600 font-bold mb-4 tracking-tighter uppercase">Total Purge</h1>
-                            <p className="text-xs tracking-[0.3em] mb-12 opacity-50 uppercase leading-loose text-white">Neural feedback failure. <br/> Re-starting Archives from Year One.</p>
-                            <button onClick={() => handleStart(false)} className="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Reboot ]</button>
-                        </div>
-                    )}
-
-                    {gameState === 'WIN' && (
-                        <div className="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center border-4 border-white m-10">
-                            <h1 className="text-7xl font-bold italic mb-6 tracking-tighter uppercase text-white drop-shadow-[0_0_20px_red]">Legacy Secured</h1>
-                            <p className="text-red-600 text-[10px] tracking-[0.5em] mb-12 uppercase font-bold">All 10 years of the BIF Market have been stabilized.</p>
-                            <button onClick={() => window.location.reload()} className="border-2 border-white px-12 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Disconnect ]</button>
-                        </div>
-                    )}
-                </div>
-            );
+            win() {
+                this.isPlaying = false;
+                clearInterval(this.timerInterval);
+                document.getElementById('win-screen').classList.remove('hidden');
+            }
         };
 
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
+        window.addEventListener('mousemove', (e) => gameState.interact(e));
+        window.addEventListener('mousedown', (e) => gameState.interact(e));
+        window.addEventListener('touchstart', (e) => gameState.interact(e));
+        window.addEventListener('touchmove', (e) => { e.preventDefault(); gameState.interact(e); }, { passive: false });
     </script>
 </body>
 </html>
