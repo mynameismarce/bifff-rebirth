@@ -1,187 +1,194 @@
 ```html
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIF-OS // FAMILIAR_AR</title>
-    <!-- MindAR & A-Frame: Industry standard WebAR -->
-    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
+    <title>BIF-OS // NEURAL_FAMILIAR_v10</title>
+    
+    <!-- Premium AR Libraries -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-three.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <style>
-        body { margin: 0; overflow: hidden; background: #000; font-family: 'Space Mono', monospace; }
+        body { margin: 0; background: #000; font-family: 'Space Mono', monospace; overflow: hidden; }
         
-        /* Ensure the AR container covers the whole screen */
-        #mindar-face-container {
-            width: 100vw;
-            height: 100vh;
-            position: fixed;
-            top: 0; left: 0;
-        }
+        /* Video Container - Full Cover */
+        #container { width: 100vw; height: 100vh; position: relative; }
+        video { object-fit: cover !important; }
 
-        /* Technical HUD Overlays */
-        .hud {
-            position: absolute;
-            inset: 0;
-            z-index: 100;
-            pointer-events: none;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 20px;
-            color: #ff0000;
-        }
-
-        .hud-header {
-            display: flex;
-            justify-content: space-between;
-            font-size: 10px;
-            letter-spacing: 3px;
-            text-transform: uppercase;
-            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
-            padding-bottom: 10px;
-            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
-        }
-
-        .hud-footer {
-            display: flex;
-            justify-content: space-between;
-            font-size: 9px;
-            letter-spacing: 2px;
-            border-top: 1px solid rgba(255, 0, 0, 0.2);
-            padding-top: 10px;
-            background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
-        }
-
-        /* Swarm of black birds in background */
-        .swarm-bird {
-            position: absolute;
-            width: 40px;
-            height: 40px;
-            pointer-events: none;
-            z-index: 50;
+        /* The Grindhouse Look */
+        .crt-filter {
+            position: absolute; inset: 0; pointer-events: none; z-index: 10;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%),
+                        linear-gradient(90deg, rgba(255, 0, 0, 0.03), rgba(0, 255, 0, 0.01), rgba(0, 0, 255, 0.03));
+            background-size: 100% 3px, 2px 100%;
             opacity: 0.6;
-            animation: swarm-fly linear infinite;
         }
 
-        @keyframes swarm-fly {
-            0% { transform: translate(-100px, 100px) rotate(15deg) scale(0.5); }
-            100% { transform: translate(120vw, -100px) rotate(-15deg) scale(1); }
+        /* Swarm Birds */
+        .bird-silhouette {
+            position: absolute; pointer-events: none; z-index: 5;
+            filter: drop-shadow(0 0 5px rgba(0,0,0,0.5));
+            will-change: transform;
         }
 
-        .scanlines {
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
-            background-size: 100% 4px;
-            z-index: 110;
-            pointer-events: none;
+        /* HUD Styling */
+        .hud-panel {
+            position: absolute; inset: 0; z-index: 100; pointer-events: none;
+            display: flex; flex-direction: column; justify-content: space-between;
+            padding: 25px; color: #ff0000;
         }
 
-        /* Loading Spinner/Status */
-        #scanning-ui {
-            position: absolute;
-            top: 50%; left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            z-index: 120;
+        .terminal-header {
+            display: flex; justify-content: space-between; align-items: flex-start;
+            border-top: 2px solid #ff0000; padding-top: 10px;
+        }
+
+        .biometric-box {
+            background: rgba(122, 0, 0, 0.1);
+            border: 1px solid rgba(255, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+            padding: 15px; width: 180px;
+        }
+
+        /* Scanning Animation */
+        #loading-overlay {
+            position: absolute; inset: 0; background: #000; z-index: 200;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+
+        .scanner-line {
+            width: 100%; height: 2px; background: #ff0000;
+            position: absolute; top: 0; left: 0;
+            box-shadow: 0 0 15px #ff0000;
+            animation: scan 3s linear infinite;
+        }
+
+        @keyframes scan { 0% { top: 0; } 100% { top: 100%; } }
+        @keyframes fly { 
+            0% { transform: translate(-100px, 10vh) scale(0.5); opacity: 0; }
+            10% { opacity: 0.6; }
+            90% { opacity: 0.6; }
+            100% { transform: translate(120vw, 80vh) scale(1.2); opacity: 0; }
         }
     </style>
 </head>
 <body>
 
-    <div id="mindar-face-container">
-        <!-- The Swarm Container -->
-        <div id="swarm-layer" class="absolute inset-0 pointer-events-none"></div>
-        
-        <div class="scanlines"></div>
+    <div id="container">
+        <!-- Digital Noise Overlay -->
+        <div class="crt-filter"></div>
+        <div class="scanner-line"></div>
 
-        <!-- UI Layers -->
-        <div class="hud">
-            <div class="hud-header">
-                <div>SYSTEM: BIF_FAMILIAR_LINK</div>
-                <div>SIGNAL: STABLE</div>
+        <!-- HUD Layer -->
+        <div class="hud-panel">
+            <div class="terminal-header">
+                <div class="flex flex-col">
+                    <span class="text-[10px] tracking-[0.5em] font-bold">LINK: BIF_FAMILIAR</span>
+                    <span class="text-[8px] opacity-60">ENCRYPTION: AES-256-BIF</span>
+                </div>
+                <div class="text-right flex flex-col">
+                    <span id="timestamp" class="text-[10px]">00:00:00:00</span>
+                    <span class="text-[8px] opacity-60 uppercase">Selection_2026</span>
+                </div>
             </div>
 
-            <div id="scanning-ui">
-                <div class="w-16 h-16 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-                <div class="text-xs uppercase tracking-widest text-red-600 font-bold">Scanning Biometrics...</div>
-                <div class="text-[8px] uppercase text-white/40 mt-2">Position head in frame for perch initialization</div>
-            </div>
-
-            <div class="hud-footer">
-                <div>ARCHIVE_REF: 2026_SELECTION</div>
-                <div>MO-STUDIO // NEURAL_INTERFACE</div>
+            <div class="flex justify-between items-end">
+                <div class="biometric-box text-[8px] leading-relaxed">
+                    <div class="text-red-500 font-bold mb-1">[BIOMETRIC_DATA]</div>
+                    STATUS: LOCKED<br>
+                    TARGET: HOMO_SAPIENS<br>
+                    HEART_RATE: 72 BPM<br>
+                    <div class="w-full h-1 bg-red-900 mt-2"><div class="h-full bg-red-500 w-1/2"></div></div>
+                </div>
+                <div class="text-right text-[10px] tracking-widest opacity-50 uppercase">
+                    Molino Studio // Neural Interface
+                </div>
             </div>
         </div>
 
-        <!-- AR Scene -->
-        <a-scene 
-            mindar-face="uiScanning: #scanning-ui" 
-            embedded 
-            color-space="sRGB" 
-            renderer="colorManagement: true, physicallyCorrectLights" 
-            vr-mode-ui="enabled: false" 
-            device-orientation-permission-ui="enabled: false">
-            
-            <a-assets>
-                <!-- Reconstructing the exact logo geometry as a flat plane -->
-                <img id="mascot-img" src="https://i.ibb.co/3ykXGfG/raven-logo-white.png" crossorigin="anonymous">
-            </a-assets>
-
-            <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
-
-            <!-- 
-                 Target 10 is the forehead.
-                 Position: X(0.8) moves it to the shoulder, Y(0.3) height, Z(-0.5) depth
-            -->
-            <a-entity mindar-face-target="anchorIndex: 10">
-                <!-- Outer Glow/Shadow for visibility -->
-                <a-plane 
-                    position="0.9 0.4 -0.6" 
-                    width="1.8" height="1.8" 
-                    material="src: #mascot-img; transparent: true; alphaTest: 0.5;"
-                    animation="property: position; dir: alternate; dur: 3000; easing: easeInOutSine; loop: true; to: 0.92 0.45 -0.6">
-                </a-plane>
-            </a-entity>
-        </a-scene>
+        <!-- Loading Screen -->
+        <div id="loading-overlay">
+            <h1 class="text-white text-3xl font-bold tracking-tighter mb-4 italic">BIF-OS</h1>
+            <div class="w-48 h-1 bg-zinc-900 overflow-hidden">
+                <div class="h-full bg-red-600 w-1/3 animate-[pulse_1s_infinite]"></div>
+            </div>
+            <p class="text-red-600 text-[10px] mt-4 tracking-[0.5em] uppercase">Initializing AR Bridge...</p>
+        </div>
     </div>
 
-    <script>
-        // Generate the "Swarm" of black silhouettes
-        const swarmLayer = document.getElementById('swarm-layer');
-        const birdSvg = `
-            <svg viewBox="0 0 100 100" width="40" height="40">
-                <path d="M10 50 L40 45 L50 10 L60 45 L90 50 L60 55 L50 90 L40 55 Z" fill="black" />
-            </svg>
-        `;
+    <script type="module">
+        const mindarThree = new window.MINDAR.FACE.MindARThree({
+            container: document.querySelector("#container"),
+        });
+        const {renderer, scene, camera} = mindarThree;
 
-        function createBird() {
-            const bird = document.createElement('div');
-            bird.className = 'swarm-bird';
-            bird.innerHTML = birdSvg;
-            bird.style.top = Math.random() * 90 + 'vh';
-            bird.style.animationDuration = (4 + Math.random() * 8) + 's';
-            bird.style.animationDelay = (Math.random() * 5) + 's';
-            swarmLayer.appendChild(bird);
+        const anchor = mindarThree.addAnchor(10); // Forehead anchor
+        
+        // Load Mascot Image with high quality settings
+        const textureLoader = new THREE.TextureLoader();
+        textureLoader.load('./1000362080.png', (texture) => {
+            texture.anisotropy = 16;
+            const geometry = new THREE.PlaneGeometry(1.2, 1.2);
+            const material = new THREE.MeshBasicMaterial({map: texture, transparent: true, side: THREE.DoubleSide});
+            const plane = new THREE.Mesh(geometry, material);
             
-            // Cleanup to keep performance high
-            setTimeout(() => bird.remove(), 15000);
+            // Positioning for shoulder perch
+            plane.position.set(0.8, 0.4, -0.6); 
+            plane.rotation.set(0, -0.2, 0);
+            anchor.group.add(plane);
+
+            // Subtle breathing animation
+            const animateRaven = () => {
+                plane.position.y = 0.4 + Math.sin(Date.now() * 0.002) * 0.03;
+                requestAnimationFrame(animateRaven);
+            };
+            animateRaven();
+        });
+
+        const start = async () => {
+            await mindarThree.start();
+            document.getElementById('loading-overlay').style.display = 'none';
+            renderer.setAnimationLoop(() => {
+                renderer.render(scene, camera);
+            });
+        };
+        start();
+
+        // --- BACKGROUND SWARM SYSTEM ---
+        const container = document.getElementById('container');
+        const ravenSvg = `<svg viewBox="0 0 100 100" width="30" height="30"><path d="M10 50 L40 45 L50 10 L60 45 L90 50 L60 55 L50 90 L40 55 Z" fill="black" /></svg>`;
+
+        function spawnSwarmBird() {
+            const bird = document.createElement('div');
+            bird.className = 'bird-silhouette';
+            bird.innerHTML = ravenSvg;
+            
+            const startY = Math.random() * 90;
+            const duration = 6 + Math.random() * 10;
+            const blur = Math.floor(Math.random() * 4);
+            
+            bird.style.left = '-100px';
+            bird.style.top = startY + 'vh';
+            bird.style.filter = `blur(${blur}px)`;
+            bird.style.animation = `fly ${duration}s linear forwards`;
+            
+            container.appendChild(bird);
+            setTimeout(() => bird.remove(), duration * 1000);
         }
 
-        // Continually spawn background birds
-        setInterval(createBird, 2000);
-        for(let i=0; i<5; i++) createBird();
+        setInterval(spawnSwarmBird, 2500);
+        for(let i=0; i<4; i++) spawnSwarmBird();
 
-        // Listen for tracking success to hide the scanning UI
-        window.addEventListener("targetFound", () => {
-            document.getElementById('scanning-ui').classList.add('hidden');
-        });
-        window.addEventListener("targetLost", () => {
-            document.getElementById('scanning-ui').classList.remove('hidden');
-        });
+        // Clock Update
+        setInterval(() => {
+            const now = new Date();
+            document.getElementById('timestamp').innerText = 
+                `${now.getHours().toString().padStart(2,'0')}:${now.getMinutes().toString().padStart(2,'0')}:${now.getSeconds().toString().padStart(2,'0')}:${now.getMilliseconds().toString().slice(0,2)}`;
+        }, 50);
     </script>
 </body>
 </html>
