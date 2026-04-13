@@ -3,15 +3,26 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIFFF // RAVEN_AR_LINK</title>
-    <!-- MindAR & A-Frame: The best free web-based AR engines -->
+    <title>BIF-OS // FAMILIAR_AR</title>
+    <!-- MindAR & A-Frame: Industry standard WebAR -->
     <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
     
     <style>
-        body { margin: 0; overflow: hidden; background: black; }
-        .ar-overlay {
+        body { margin: 0; overflow: hidden; background: #000; font-family: 'Space Mono', monospace; }
+        
+        /* Ensure the AR container covers the whole screen */
+        #mindar-face-container {
+            width: 100vw;
+            height: 100vh;
+            position: fixed;
+            top: 0; left: 0;
+        }
+
+        /* Technical HUD Overlays */
+        .hud {
             position: absolute;
             inset: 0;
             z-index: 100;
@@ -19,26 +30,45 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 30px;
-            font-family: monospace;
+            padding: 20px;
             color: #ff0000;
         }
-        
-        /* The Swarm Animation */
-        .bird {
-            position: absolute;
-            width: 80px;
-            height: 80px;
-            opacity: 0.4;
-            pointer-events: none;
-            z-index: 90;
-            animation: fly linear infinite;
+
+        .hud-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 10px;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            border-bottom: 1px solid rgba(255, 0, 0, 0.2);
+            padding-bottom: 10px;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.5), transparent);
         }
 
-        @keyframes fly {
-            0% { transform: translate(-100vw, 20vh) scale(0.5); }
-            50% { transform: translate(50vw, 50vh) scale(1.2); }
-            100% { transform: translate(200vw, 10vh) scale(0.5); }
+        .hud-footer {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            letter-spacing: 2px;
+            border-top: 1px solid rgba(255, 0, 0, 0.2);
+            padding-top: 10px;
+            background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
+        }
+
+        /* Swarm of black birds in background */
+        .swarm-bird {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            pointer-events: none;
+            z-index: 50;
+            opacity: 0.6;
+            animation: swarm-fly linear infinite;
+        }
+
+        @keyframes swarm-fly {
+            0% { transform: translate(-100px, 100px) rotate(15deg) scale(0.5); }
+            100% { transform: translate(120vw, -100px) rotate(-15deg) scale(1); }
         }
 
         .scanlines {
@@ -47,80 +77,110 @@
             background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
             background-size: 100% 4px;
             z-index: 110;
+            pointer-events: none;
+        }
+
+        /* Loading Spinner/Status */
+        #scanning-ui {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 120;
         }
     </style>
 </head>
 <body>
 
-    <div class="scanlines"></div>
-    
-    <!-- UI Elements -->
-    <div class="ar-overlay">
-        <div class="flex justify-between uppercase text-[10px] tracking-[0.3em]">
-            <div>Status: Detecting_Biometric_Target</div>
-            <div>BIFFF_OS_2026</div>
-        </div>
+    <div id="mindar-face-container">
+        <!-- The Swarm Container -->
+        <div id="swarm-layer" class="absolute inset-0 pointer-events-none"></div>
         
-        <div id="instruction" class="text-center bg-black/40 p-4 border border-red-900/30 backdrop-blur-md">
-            <p class="text-xs uppercase tracking-widest">Point camera at face</p>
-            <p class="text-[9px] opacity-50">THE RAVEN WILL FIND ITS PERCH</p>
+        <div class="scanlines"></div>
+
+        <!-- UI Layers -->
+        <div class="hud">
+            <div class="hud-header">
+                <div>SYSTEM: BIF_FAMILIAR_LINK</div>
+                <div>SIGNAL: STABLE</div>
+            </div>
+
+            <div id="scanning-ui">
+                <div class="w-16 h-16 border-2 border-red-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+                <div class="text-xs uppercase tracking-widest text-red-600 font-bold">Scanning Biometrics...</div>
+                <div class="text-[8px] uppercase text-white/40 mt-2">Position head in frame for perch initialization</div>
+            </div>
+
+            <div class="hud-footer">
+                <div>ARCHIVE_REF: 2026_SELECTION</div>
+                <div>MO-STUDIO // NEURAL_INTERFACE</div>
+            </div>
         </div>
+
+        <!-- AR Scene -->
+        <a-scene 
+            mindar-face="uiScanning: #scanning-ui" 
+            embedded 
+            color-space="sRGB" 
+            renderer="colorManagement: true, physicallyCorrectLights" 
+            vr-mode-ui="enabled: false" 
+            device-orientation-permission-ui="enabled: false">
+            
+            <a-assets>
+                <!-- Reconstructing the exact logo geometry as a flat plane -->
+                <img id="mascot-img" src="https://i.ibb.co/3ykXGfG/raven-logo-white.png" crossorigin="anonymous">
+            </a-assets>
+
+            <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
+
+            <!-- 
+                 Target 10 is the forehead.
+                 Position: X(0.8) moves it to the shoulder, Y(0.3) height, Z(-0.5) depth
+            -->
+            <a-entity mindar-face-target="anchorIndex: 10">
+                <!-- Outer Glow/Shadow for visibility -->
+                <a-plane 
+                    position="0.9 0.4 -0.6" 
+                    width="1.8" height="1.8" 
+                    material="src: #mascot-img; transparent: true; alphaTest: 0.5;"
+                    animation="property: position; dir: alternate; dur: 3000; easing: easeInOutSine; loop: true; to: 0.92 0.45 -0.6">
+                </a-plane>
+            </a-entity>
+        </a-scene>
     </div>
 
-    <!-- Background Swarm (2D Silhouettes) -->
-    <div id="swarm-container"></div>
-
-    <!-- AR Scene -->
-    <a-scene 
-        mindar-face="uiScanning: #instruction" 
-        embedded 
-        color-space="sRGB" 
-        renderer="colorManagement: true, physicallyCorrectLights" 
-        vr-mode-ui="enabled: false" 
-        device-orientation-permission-ui="enabled: false">
-        
-        <a-assets>
-            <!-- The Official Mascot Shape -->
-            <img id="raven-mascot" src="https://i.imgur.com/8mYvU3i.png" crossorigin="anonymous">
-        </a-assets>
-
-        <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
-
-        <!-- Face Target: 10 is the forehead area. 
-             We offset it to land on the shoulder/side of head -->
-        <a-entity mindar-face-target="anchorIndex: 10">
-            <a-image 
-                src="#raven-mascot" 
-                position="0.8 0.5 -0.5" 
-                scale="1.2 1.2 1.2" 
-                rotation="0 0 -10"
-                animation="property: position; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true; to: 0.82 0.55 -0.5">
-            </a-image>
-        </a-entity>
-    </a-scene>
-
     <script>
-        // Generating the "Swarm" of ravens flying in 2D
-        const container = document.getElementById('swarm-container');
+        // Generate the "Swarm" of black silhouettes
+        const swarmLayer = document.getElementById('swarm-layer');
         const birdSvg = `
-            <svg viewBox="0 0 100 100" width="100" height="100">
-                <path d="M10 50 L40 45 L50 10 L60 45 L90 50 L60 55 L50 90 L40 55 Z" fill="red" />
+            <svg viewBox="0 0 100 100" width="40" height="40">
+                <path d="M10 50 L40 45 L50 10 L60 45 L90 50 L60 55 L50 90 L40 55 Z" fill="black" />
             </svg>
         `;
 
-        for(let i=0; i<8; i++) {
+        function createBird() {
             const bird = document.createElement('div');
-            bird.className = 'bird';
+            bird.className = 'swarm-bird';
             bird.innerHTML = birdSvg;
-            bird.style.top = Math.random() * 80 + 'vh';
-            bird.style.animationDuration = (5 + Math.random() * 10) + 's';
+            bird.style.top = Math.random() * 90 + 'vh';
+            bird.style.animationDuration = (4 + Math.random() * 8) + 's';
             bird.style.animationDelay = (Math.random() * 5) + 's';
-            container.appendChild(bird);
+            swarmLayer.appendChild(bird);
+            
+            // Cleanup to keep performance high
+            setTimeout(() => bird.remove(), 15000);
         }
 
-        // Hide instruction once face is found
-        window.addEventListener("targetFound", event => {
-            document.getElementById('instruction').style.display = 'none';
+        // Continually spawn background birds
+        setInterval(createBird, 2000);
+        for(let i=0; i<5; i++) createBird();
+
+        // Listen for tracking success to hide the scanning UI
+        window.addEventListener("targetFound", () => {
+            document.getElementById('scanning-ui').classList.add('hidden');
+        });
+        window.addEventListener("targetLost", () => {
+            document.getElementById('scanning-ui').classList.remove('hidden');
         });
     </script>
 </body>
