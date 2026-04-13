@@ -1,342 +1,129 @@
+```html
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>BIF-OS // ANTHOLOGY 10.0</title>
+    <title>BIFFF // RAVEN_AR_LINK</title>
+    <!-- MindAR & A-Frame: The best free web-based AR engines -->
+    <script src="https://aframe.io/releases/1.2.0/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.0/dist/mindar-face-aframe.prod.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
-        body { margin: 0; padding: 0; background-color: black; font-family: 'Space Mono', monospace; overflow: hidden; touch-action: none; color: white; }
-        .crt-overlay { pointer-events: none; position: absolute; inset: 0; z-index: 999; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.15) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05)); background-size: 100% 4px, 3px 100%; opacity: 0.2; }
-        .perspective-view { perspective: 1000px; }
-        @keyframes scan { from { transform: translateY(-100%); } to { transform: translateY(100%); } }
-        .scanline { position: absolute; width: 100%; height: 100px; background: linear-gradient(to bottom, transparent, rgba(255,0,0,0.1), transparent); animation: scan 8s linear infinite; }
-        .hidden { display: none !important; }
-        #game-container { position: relative; width: 100vw; height: 100vh; overflow: hidden; }
-        .entity { position: absolute; will-change: transform; pointer-events: none; }
-        .projectile { position: absolute; background: white; width: 4px; height: 10px; border-radius: 2px; box-shadow: 0 0 8px white; z-index: 30; }
-        .pixel-text { text-shadow: 0 0 10px rgba(255,0,0,0.8); }
+        body { margin: 0; overflow: hidden; background: black; }
+        .ar-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 100;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 30px;
+            font-family: monospace;
+            color: #ff0000;
+        }
+        
+        /* The Swarm Animation */
+        .bird {
+            position: absolute;
+            width: 80px;
+            height: 80px;
+            opacity: 0.4;
+            pointer-events: none;
+            z-index: 90;
+            animation: fly linear infinite;
+        }
+
+        @keyframes fly {
+            0% { transform: translate(-100vw, 20vh) scale(0.5); }
+            50% { transform: translate(50vw, 50vh) scale(1.2); }
+            100% { transform: translate(200vw, 10vh) scale(0.5); }
+        }
+
+        .scanlines {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.1) 50%);
+            background-size: 100% 4px;
+            z-index: 110;
+        }
     </style>
 </head>
 <body>
-    <div class="crt-overlay"></div>
-    <div class="scanline"></div>
 
-    <div id="game-container">
-        <!-- HUD -->
-        <header id="hud" class="absolute top-0 w-full p-6 flex justify-between items-center z-50 border-b border-red-900/30 bg-black/50 backdrop-blur-md hidden">
-            <div class="flex flex-col gap-1">
-                <span class="text-[10px] text-red-500 opacity-60 uppercase tracking-widest">Neural_Sync</span>
-                <div id="life-container" class="flex gap-1.5"></div>
-            </div>
-            <div class="text-center">
-                <h2 id="level-name" class="text-sm font-bold tracking-[0.3em] uppercase">PHASE_NAME</h2>
-                <span id="timer-text" class="text-[10px] text-zinc-500 font-bold">10s TO STABILIZE</span>
-            </div>
-            <div class="text-right">
-                <span class="text-[10px] text-red-500 opacity-60 uppercase">Year</span>
-                <div id="year-text" class="text-xl font-bold text-white">2017</div>
-            </div>
-        </header>
-
-        <!-- Dynamic Content Layer -->
-        <div id="world" class="w-full h-full relative"></div>
-
-        <!-- Screens -->
-        <div id="start-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center p-12 text-center border-[15px] border-double border-red-900/20 m-4">
-            <h1 class="text-6xl font-bold italic mb-4 tracking-tighter uppercase pixel-text italic">BIF-OS // ANTHOLOGY</h1>
-            <p class="text-red-600 max-w-sm text-[10px] tracking-[0.4em] uppercase mb-12 leading-relaxed font-bold">10 YEARS OF HISTORY. 3 NEURAL ATTEMPTS. <br/> RESTORE THE RAVEN ARCHIVE.</p>
-            <div class="flex flex-col gap-5">
-                <button onclick="gameState.init(false)" class="border-2 border-red-600 px-12 py-4 text-red-600 font-bold tracking-[0.5em] hover:bg-red-600 hover:text-black transition-all uppercase">[ Initialize Survival ]</button>
-                <button onclick="gameState.init(true)" class="text-zinc-600 text-[9px] hover:text-red-500 transition-colors uppercase">[ Auto-Demo Mode ]</button>
-            </div>
+    <div class="scanlines"></div>
+    
+    <!-- UI Elements -->
+    <div class="ar-overlay">
+        <div class="flex justify-between uppercase text-[10px] tracking-[0.3em]">
+            <div>Status: Detecting_Biometric_Target</div>
+            <div>BIFFF_OS_2026</div>
         </div>
-
-        <div id="intro-screen" class="absolute inset-0 bg-black/95 backdrop-blur-xl z-[300] flex flex-col items-center justify-center p-10 text-center hidden">
-            <span id="intro-year" class="text-red-500 text-[10px] mb-2 tracking-[1em] uppercase opacity-50">Year Loading</span>
-            <h2 id="intro-name" class="text-6xl font-bold italic mb-6 text-white tracking-tighter uppercase">LEVEL_NAME</h2>
-            <p id="intro-desc" class="max-w-md text-xs text-red-600/80 uppercase tracking-[0.2em] border-t border-red-900/30 pt-6 leading-loose">LEVEL_DESC</p>
-        </div>
-
-        <div id="retry-screen" class="absolute inset-0 bg-red-950/60 backdrop-blur-lg z-[300] flex flex-col items-center justify-center text-center p-8 hidden">
-            <h2 class="text-6xl text-white font-bold mb-4 tracking-tighter uppercase">Integrity Loss</h2>
-            <p id="lives-left-text" class="text-xs tracking-[0.5em] mb-12 opacity-80 uppercase">N Neural Syncs Left.</p>
-            <button onclick="gameState.resume()" class="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ Resume Phase ]</button>
-        </div>
-
-        <div id="gameover-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center p-8 border-t-8 border-red-600 hidden">
-            <h1 class="text-7xl text-red-600 font-bold mb-4 tracking-tighter uppercase">Total Purge</h1>
-            <p class="text-xs tracking-[0.3em] mb-12 opacity-50 uppercase leading-loose text-white">Neural feedback failure. <br/> Re-starting Archives from Year One.</p>
-            <button onclick="location.reload()" class="border-2 border-white px-10 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Reboot ]</button>
-        </div>
-
-        <div id="win-screen" class="absolute inset-0 bg-black z-[300] flex flex-col items-center justify-center text-center border-4 border-white m-10 hidden">
-            <h1 class="text-7xl font-bold italic mb-6 tracking-tighter uppercase text-white drop-shadow-[0_0_20px_red]">Legacy Secured</h1>
-            <p class="text-red-600 text-[10px] tracking-[0.5em] mb-12 uppercase font-bold">All 10 years of history have been stabilized.</p>
-            <button onclick="location.reload()" class="border-2 border-white px-12 py-4 font-bold hover:bg-white hover:text-black transition-all uppercase">[ System Disconnect ]</button>
+        
+        <div id="instruction" class="text-center bg-black/40 p-4 border border-red-900/30 backdrop-blur-md">
+            <p class="text-xs uppercase tracking-widest">Point camera at face</p>
+            <p class="text-[9px] opacity-50">THE RAVEN WILL FIND ITS PERCH</p>
         </div>
     </div>
 
-    <script>
-        const RAVEN_SVG = `<svg viewBox="0 0 500 500" class="w-full h-full drop-shadow-[0_0_15px_rgba(255,255,255,0.4)]">
-            <path d="M210,145 C205,100 210,65 210,65 C210,65 230,40 300,40 C370,40 390,65 390,65 C390,65 395,100 390,145 Z M180,145 C180,145 200,165 300,165 C400,165 420,145 420,145 L420,158 C420,158 400,175 300,175 C200,175 180,158 180,158 Z M220,175 C210,220 220,280 280,380 L320,450 L340,380 C360,350 430,300 440,200 L420,175 Z M280,380 L230,340 L260,330 L220,300 L250,290 L215,260 Z M260,175 C250,200 260,240 300,280 L320,320 L330,280 Q350,240 370,175 Z" fill="white" />
-            <path d="M335,190 Q365,190 385,215 Q355,230 335,220 Z" fill="#ff0000" />
-        </svg>`;
+    <!-- Background Swarm (2D Silhouettes) -->
+    <div id="swarm-container"></div>
+
+    <!-- AR Scene -->
+    <a-scene 
+        mindar-face="uiScanning: #instruction" 
+        embedded 
+        color-space="sRGB" 
+        renderer="colorManagement: true, physicallyCorrectLights" 
+        vr-mode-ui="enabled: false" 
+        device-orientation-permission-ui="enabled: false">
         
-        const PAZUZU_SVG = `<svg viewBox="0 0 100 100" class="w-full h-full"><path d="M50 45 L15 15 L5 45 L45 55 Z M50 45 L85 15 L95 45 L55 55 Z M50 65 L15 65 L10 85 L45 75 Z M50 65 L85 65 L90 85 L55 75 Z M46 35 L54 35 L52 88 L48 88 Z M42 30 L50 15 L58 30 L55 38 L45 38 Z" fill="red" /></svg>`;
+        <a-assets>
+            <!-- The Official Mascot Shape -->
+            <img id="raven-mascot" src="https://i.imgur.com/8mYvU3i.png" crossorigin="anonymous">
+        </a-assets>
 
-        const LEVELS = [
-            { id: 1, name: "PONG_BREACH", desc: "DEFLECT THE BALL. USE RAVEN AS SHIELD.", year: 2017 },
-            { id: 2, name: "DUCK_HUNT", desc: "TARGET DETECTED. TAP PAZUZUS TO KILL.", year: 2018 },
-            { id: 3, name: "DATA_INVADERS", desc: "LOCKED AT BASE. TAP TO SHOOT UPWARD.", year: 2019 },
-            { id: 4, name: "TERMINAL_DOOM", desc: "PSEUDO-3D. TAP TO SHOOT INTO DEPTHS.", year: 2020 },
-            { id: 5, name: "GHOST_HUNTER", desc: "PAC-MAN MODE. EVADE THE PURSUIT.", year: 2021 },
-            { id: 6, name: "DATA_HIGHWAY", desc: "FROGGER. CROSS WITHOUT COLLIDING.", year: 2022 },
-            { id: 7, name: "TETRIS_CRUSH", desc: "AVOID FALLING BLOCKS. FIND THE GAP.", year: 2023 },
-            { id: 8, name: "ASTEROIDS", desc: "DANGER DRIFT. TAP TO SHOOT DEBRIS.", year: 2024 },
-            { id: 9, name: "CENTIPEDE", desc: "SHOOT THE SEGMENTS FROM THE BOTTOM.", year: 2025 },
-            { id: 10, name: "GLITCH_REALITY", desc: "TOTAL CHAOS. SURVIVE EVERYTHING.", year: 2026 },
-        ];
+        <a-camera active="false" position="0 0 0" look-controls="enabled: false"></a-camera>
 
-        const gameState = {
-            level: 0, lives: 3, timeLeft: 10, isDemo: false, isPlaying: false,
-            player: { x: 0, y: 0, tx: 0, ty: 0, vx: 0, vy: 0 },
-            entities: [], projectiles: [],
-            
-            init(demo) {
-                this.isDemo = demo;
-                this.lives = demo ? 99 : 3;
-                document.getElementById('start-screen').classList.add('hidden');
-                document.getElementById('hud').classList.remove('hidden');
-                this.loadLevel(1);
-            },
+        <!-- Face Target: 10 is the forehead area. 
+             We offset it to land on the shoulder/side of head -->
+        <a-entity mindar-face-target="anchorIndex: 10">
+            <a-image 
+                src="#raven-mascot" 
+                position="0.8 0.5 -0.5" 
+                scale="1.2 1.2 1.2" 
+                rotation="0 0 -10"
+                animation="property: position; dir: alternate; dur: 2000; easing: easeInOutSine; loop: true; to: 0.82 0.55 -0.5">
+            </a-image>
+        </a-entity>
+    </a-scene>
 
-            loadLevel(num) {
-                this.level = num;
-                this.isPlaying = false;
-                const lvl = LEVELS[num-1];
-                
-                document.getElementById('intro-screen').classList.remove('hidden');
-                document.getElementById('intro-year').innerText = `Year ${lvl.year} Loading`;
-                document.getElementById('intro-name').innerText = lvl.name;
-                document.getElementById('intro-desc').innerText = lvl.desc;
-                
-                setTimeout(() => {
-                    document.getElementById('intro-screen').classList.add('hidden');
-                    this.startPhase();
-                }, 2000);
-            },
+    <script>
+        // Generating the "Swarm" of ravens flying in 2D
+        const container = document.getElementById('swarm-container');
+        const birdSvg = `
+            <svg viewBox="0 0 100 100" width="100" height="100">
+                <path d="M10 50 L40 45 L50 10 L60 45 L90 50 L60 55 L50 90 L40 55 Z" fill="red" />
+            </svg>
+        `;
 
-            startPhase() {
-                const w = window.innerWidth;
-                const h = window.innerHeight;
-                this.entities = [];
-                this.projectiles = [];
-                this.timeLeft = 10;
-                this.isPlaying = true;
-                this.player.x = w / 2;
-                this.player.tx = w / 2;
-                this.player.y = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7) ? h - 120 : h / 2;
-                this.player.ty = this.player.y;
-                
-                document.getElementById('world').innerHTML = '';
-                this.updateHUD();
+        for(let i=0; i<8; i++) {
+            const bird = document.createElement('div');
+            bird.className = 'bird';
+            bird.innerHTML = birdSvg;
+            bird.style.top = Math.random() * 80 + 'vh';
+            bird.style.animationDuration = (5 + Math.random() * 10) + 's';
+            bird.style.animationDelay = (Math.random() * 5) + 's';
+            container.appendChild(bird);
+        }
 
-                if (this.level === 1) this.spawnEntity({ x: w / 2, y: 100, vx: 4, vy: 4, size: 50, type: 'ball' });
-                if (this.level === 3) {
-                    for(let i=0; i<15; i++) this.spawnEntity({ x: (i%5)*120+100, y: Math.floor(i/5)*70+100, vx: 1.5, vy: 0, size: 45, type: 'invader' });
-                }
-
-                this.lastTick = performance.now();
-                requestAnimationFrame((t) => this.tick(t));
-                this.timerInterval = setInterval(() => {
-                    this.timeLeft--;
-                    this.updateHUD();
-                    if (this.timeLeft <= 0) {
-                        clearInterval(this.timerInterval);
-                        if (this.level === 10) this.win();
-                        else this.loadLevel(this.level + 1);
-                    }
-                }, 1000);
-            },
-
-            spawnEntity(data) {
-                const el = document.createElement('div');
-                el.className = 'entity';
-                el.innerHTML = PAZUZU_SVG;
-                document.getElementById('world').appendChild(el);
-                const ent = { ...data, el };
-                this.entities.push(ent);
-                return ent;
-            },
-
-            spawnProj(data) {
-                const el = document.createElement('div');
-                el.className = 'projectile';
-                document.getElementById('world').appendChild(el);
-                this.projectiles.push({ ...data, el });
-            },
-
-            tick(t) {
-                if (!this.isPlaying) return;
-                
-                const w = window.innerWidth;
-                const h = window.innerHeight;
-                
-                // Move Player
-                const lockY = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7);
-                this.player.x += (this.player.tx - this.player.x) * 0.15;
-                if (!lockY) this.player.y += (this.player.ty - this.player.y) * 0.15;
-
-                // Move Entities
-                this.entities.forEach((en, i) => {
-                    switch(this.level) {
-                        case 1: // Pong
-                            en.x += en.vx; en.y += en.vy;
-                            if (en.x < 20 || en.x > w - 70) en.vx *= -1;
-                            if (en.y < 80) en.vy *= -1;
-                            if (en.y > this.player.y - 40 && en.x > this.player.x - 70 && en.x < this.player.x + 70) {
-                                en.vy *= -1.02; en.y = this.player.y - 45;
-                            }
-                            if (en.y > h) this.die();
-                            break;
-                        case 3: // Invaders
-                            en.x += en.vx;
-                            if (en.x > w - 60 || en.x < 40) { this.invaderReverse = true; }
-                            if (Math.hypot(this.player.x - en.x, this.player.y - en.y) < 45) this.die();
-                            break;
-                        case 4: // Doom (3D)
-                            en.z = (en.z || 0) + 0.015;
-                            if (en.z > 0.95 && Math.hypot(this.player.x - en.x, this.player.y - en.y) < 70) this.die();
-                            break;
-                        case 7: // Tetris
-                            en.y += 5;
-                            if (Math.abs(this.player.x - en.x) < 55 && Math.abs(this.player.y - en.y) < 55) this.die();
-                            break;
-                        default: // Chasers
-                            const dx = this.player.x - en.x, dy = this.player.y - en.y, dist = Math.hypot(dx, dy);
-                            en.x += (dx / dist) * (en.speed || 2);
-                            en.y += (dy / dist) * (en.speed || 2);
-                            if (dist < 45) this.die();
-                    }
-                    
-                    let transform = `translate(${en.x - en.size/2}px, ${en.y - en.size/2}px)`;
-                    if (this.level === 4) transform = `translate(${en.x - (en.size*en.z*10)/2}px, ${en.y - (en.size*en.z*10)/2}px) scale(${en.z * 10})`;
-                    en.el.style.transform = transform;
-                    en.el.style.width = en.size + 'px';
-                    en.el.style.height = en.size + 'px';
-                    en.el.style.opacity = this.level === 4 ? en.z : 1;
-                });
-
-                if (this.invaderReverse) {
-                    this.entities.forEach(en => { en.vx *= -1; en.y += 20; });
-                    this.invaderReverse = false;
-                }
-
-                // Random Spawns
-                if (Math.random() < 0.03) {
-                    if (this.level === 2) this.spawnEntity({ x: Math.random()*w, y: h+50, vx: (Math.random()-0.5)*8, vy: -12, size: 50, speed: 2 });
-                    if (this.level === 4) this.spawnEntity({ x: Math.random()*w, y: Math.random()*h, z: 0, size: 10 });
-                    if (this.level === 7) this.spawnEntity({ x: Math.floor(Math.random()*(w/100))*100+50, y: -100, size: 100 });
-                    if (this.level >= 5 && this.level !== 7 && this.level !== 9) this.spawnEntity({ x: Math.random()*w, y: -50, size: 50, speed: 1.5 + this.level*0.2 });
-                }
-
-                // Projectiles
-                this.projectiles.forEach((pr, i) => {
-                    pr.x += pr.vx; pr.y += pr.vy;
-                    pr.el.style.transform = `translate(${pr.x}px, ${pr.y}px)`;
-                    this.entities.forEach((en, ei) => {
-                        if (Math.hypot(pr.x - en.x, pr.y - en.y) < en.size) {
-                            en.el.remove(); this.entities.splice(ei, 1);
-                            pr.el.remove(); this.projectiles.splice(i, 1);
-                        }
-                    });
-                    if (pr.y < -50 || pr.y > h+50) { pr.el.remove(); this.projectiles.splice(i, 1); }
-                });
-
-                this.renderPlayer();
-                requestAnimationFrame((t) => this.tick(t));
-            },
-
-            renderPlayer() {
-                let pEl = document.getElementById('player');
-                if (!pEl) {
-                    pEl = document.createElement('div');
-                    pEl.id = 'player';
-                    pEl.className = 'entity z-40';
-                    pEl.style.width = '90px'; pEl.style.height = '90px';
-                    pEl.innerHTML = RAVEN_SVG;
-                    document.getElementById('world').appendChild(pEl);
-                }
-                const tilt = (this.player.tx - this.player.x) * 0.12;
-                const flip = this.player.tx < this.player.x ? -1 : 1;
-                pEl.style.transform = `translate(${this.player.x - 45}px, ${this.player.y - 45}px) rotate(${tilt}deg) scaleX(${flip})`;
-            },
-
-            interact(e) {
-                if (!this.isPlaying) return;
-                const cx = e.touches ? e.touches[0].clientX : e.clientX;
-                const cy = e.touches ? e.touches[0].clientY : e.clientY;
-                this.player.tx = cx;
-                const lockY = (this.level === 1 || this.level === 3 || this.level === 9 || this.level === 7);
-                if (!lockY) this.player.ty = cy;
-
-                if (e.type === 'mousedown' || e.type === 'touchstart') {
-                    if (this.level === 2 || this.level === 4) {
-                        this.entities = this.entities.filter(en => {
-                            const d = Math.hypot(cx - en.x, cy - en.y);
-                            if (d < (this.level === 4 ? en.size * 5 : en.size) + 40) { en.el.remove(); return false; }
-                            return true;
-                        });
-                    } else if ([3, 8, 9, 10].includes(this.level)) {
-                        this.spawnProj({ x: this.player.x, y: this.player.y, vx: 0, vy: -10 });
-                    }
-                }
-            },
-
-            updateHUD() {
-                document.getElementById('level-name').innerText = LEVELS[this.level-1].name;
-                document.getElementById('year-text').innerText = LEVELS[this.level-1].year;
-                document.getElementById('timer-text').innerText = `${this.timeLeft}s TO STABILIZE`;
-                const container = document.getElementById('life-container');
-                container.innerHTML = '';
-                for(let i=0; i<(this.isDemo?1:this.lives); i++) {
-                    const dot = document.createElement('div');
-                    dot.className = 'w-3 h-3 bg-red-600 rounded-full animate-pulse shadow-[0_0_8px_red]';
-                    container.appendChild(dot);
-                }
-            },
-
-            die() {
-                if (this.isDemo || !this.isPlaying) return;
-                this.isPlaying = false;
-                clearInterval(this.timerInterval);
-                this.lives--;
-                if (this.lives > 0) {
-                    document.getElementById('lives-left-text').innerText = `${this.lives} Neural Syncs Left.`;
-                    document.getElementById('retry-screen').classList.remove('hidden');
-                } else {
-                    document.getElementById('gameover-screen').classList.remove('hidden');
-                }
-            },
-
-            resume() {
-                document.getElementById('retry-screen').classList.add('hidden');
-                this.startPhase();
-            },
-
-            win() {
-                this.isPlaying = false;
-                clearInterval(this.timerInterval);
-                document.getElementById('win-screen').classList.remove('hidden');
-            }
-        };
-
-        window.addEventListener('mousemove', (e) => gameState.interact(e));
-        window.addEventListener('mousedown', (e) => gameState.interact(e));
-        window.addEventListener('touchstart', (e) => gameState.interact(e));
-        window.addEventListener('touchmove', (e) => { e.preventDefault(); gameState.interact(e); }, { passive: false });
+        // Hide instruction once face is found
+        window.addEventListener("targetFound", event => {
+            document.getElementById('instruction').style.display = 'none';
+        });
     </script>
 </body>
 </html>
+
+```
